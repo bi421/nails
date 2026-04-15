@@ -9,16 +9,12 @@
 html,body{background:#0a0a0a;height:100%;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;color:#f0f0f0}
 #app{display:flex;flex-direction:column;height:100dvh}
 #wrap{position:relative;flex:1 1 auto;background:#000;overflow:hidden}
-
-/* Video mirrored via CSS, canvas draws manually mirrored coords */
+/* video CSS-mirror, canvas draws manually-mirrored coords */
 video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-
 #hud{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:5;pointer-events:none}
 .badge{background:rgba(0,0,0,0.65);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:#88ffaa;backdrop-filter:blur(4px)}
 .badge.warn{color:#ffaa66}
-
-/* Bottom recommendation panel */
 #panel{flex:0 0 auto;background:#111;border-top:1px solid #222;padding:12px 16px 20px}
 #panel-label{font-size:10px;font-weight:500;letter-spacing:.12em;color:#444;text-transform:uppercase;margin-bottom:10px}
 #chips{display:flex;flex-wrap:wrap;gap:8px;min-height:36px}
@@ -28,21 +24,15 @@ canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .chip.square{background:#2b1818;color:#ff8080;border:1px solid #5c2222}
 .chip.round {background:#2b2318;color:#ffd080;border:1px solid #5c4422}
 .ph{font-size:13px;color:#444;padding:6px 0}
-
-/* Start overlay */
 #start{position:absolute;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:20;padding:32px}
 #start h2{font-size:22px;font-weight:500;color:#eee;text-align:center}
 #start p{font-size:14px;color:#555;text-align:center;line-height:1.7;max-width:260px}
 #btnStart{background:#1a1a2e;border:2px solid #4a4a9a;color:#aaaaff;font-size:17px;font-weight:500;padding:16px 0;border-radius:30px;cursor:pointer;width:100%;max-width:260px}
 #btnStart:active{opacity:.7}
-
-/* Loading overlay */
 #loading{position:absolute;inset:0;background:#0a0a0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15}
 #loading p{font-size:14px;color:#777;text-align:center;padding:0 24px;line-height:1.7}
-.spin{width:38px;height:38px;border:3px solid #222;border-top-color:#aaaaff;border-radius:50%;animation:s .8s linear infinite}
-@keyframes s{to{transform:rotate(360deg)}}
-
-#errMsg{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:13px;color:#ff8888;z-index:25;display:none;padding:8px}
+.spin{width:38px;height:38px;border:3px solid #222;border-top-color:#aaaaff;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -54,74 +44,63 @@ canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
       <span class="badge" id="fpsBadge">-- fps</span>
       <span class="badge warn" id="statusBadge">хайж байна…</span>
     </div>
-
     <div id="start">
       <h2>💅 Nail Advisor</h2>
-      <p>Гараа камерт үзүүлэхэд хумсны загвар зөвлөж, AR-аар дэлгэцэнд харуулна</p>
+      <p>Гараа камерт үзүүлэхэд хумсны байрлалыг пикселийн шинжилгээгээр тодорхойлж загварыг харуулна</p>
       <button id="btnStart">▶  Камер нээх</button>
     </div>
-
     <div id="loading">
       <div class="spin"></div>
       <p id="loadMsg">Ачаалж байна…</p>
     </div>
-
-    <div id="errMsg"></div>
   </div>
-
   <div id="panel">
     <div id="panel-label">Зөвлөсөн хумсны загвар</div>
     <div id="chips"><span class="ph">Гараа камерт үзүүлнэ үү</span></div>
   </div>
 </div>
-
 <script>
-// ── DOM ──────────────────────────────────────────────────────
-const video      = document.getElementById('video');
-const canvas     = document.getElementById('canvas');
-const ctx        = canvas.getContext('2d');
-const fpsBadge   = document.getElementById('fpsBadge');
-const statusBadge= document.getElementById('statusBadge');
-const chipsEl    = document.getElementById('chips');
-const startEl    = document.getElementById('start');
-const loadEl     = document.getElementById('loading');
-const loadMsg    = document.getElementById('loadMsg');
-const errMsg     = document.getElementById('errMsg');
+const video       = document.getElementById('video');
+const canvas      = document.getElementById('canvas');
+const ctx         = canvas.getContext('2d');
+const fpsBadge    = document.getElementById('fpsBadge');
+const statusBadge = document.getElementById('statusBadge');
+const chipsEl     = document.getElementById('chips');
+const startEl     = document.getElementById('start');
+const loadEl      = document.getElementById('loading');
+const loadMsg     = document.getElementById('loadMsg');
 
-// ── Kalman Filter ─────────────────────────────────────────────
+// ── Offscreen canvas for pixel reading (no CSS transform) ────
+const offC  = document.createElement('canvas');
+const offX  = offC.getContext('2d', {willReadFrequently: true});
+
+// ── Kalman Filter ────────────────────────────────────────────
 class KF {
-  constructor(q=0.002,r=0.015){this.q=q;this.r=r;this.p=1;this.x=null}
-  f(v){
-    if(this.x===null){this.x=v;return v}
-    this.p+=this.q;
-    const k=this.p/(this.p+this.r);
-    this.x+=k*(v-this.x);
-    this.p=(1-k)*this.p;
-    return this.x;
-  }
-  reset(){this.x=null;this.p=1}
+  constructor(q=0.001, r=0.012){ this.q=q; this.r=r; this.p=1; this.x=null; }
+  f(v){ if(this.x===null){this.x=v;return v;} this.p+=this.q; const k=this.p/(this.p+this.r); this.x+=k*(v-this.x); this.p*=(1-k); return this.x; }
+  reset(){ this.x=null; this.p=1; }
 }
 
-// Per-landmark Kalman filters (21 landmarks × x,y)
-let kf = {};
-function getKF(i,ax){ const k=`${i}${ax}`; if(!kf[k])kf[k]=new KF(); return kf[k]; }
+// Per-landmark filters
+let lmKF={};
+function getLMKF(i,ax){ const k=`${i}${ax}`; if(!lmKF[k]) lmKF[k]=new KF(0.001,0.012); return lmKF[k]; }
+// Per-finger refined position filters (stronger smoothing)
+let refKF={};
+function getRefKF(name,ax){ const k=`${name}${ax}`; if(!refKF[k]) refKF[k]=new KF(0.0005,0.008); return refKF[k]; }
+
+function resetAll(){ lmKF={}; refKF={}; cSmooth={}; }
+
+// ── Smooth raw landmarks ─────────────────────────────────────
 function smoothLM(lm){
-  return lm.map((p,i)=>({x:getKF(i,'x').f(p.x), y:getKF(i,'y').f(p.y), z:p.z}));
+  return lm.map((p,i)=>({ x:getLMKF(i,'x').f(p.x), y:getLMKF(i,'y').f(p.y), z:p.z }));
 }
-function resetKF(){kf={}}
 
-// ── Math ──────────────────────────────────────────────────────
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-function palmW(lm){return dist(lm[5],lm[17])}
-
-// Classify finger → nail shape
+// ── Shape classification (EMA) ───────────────────────────────
 let cSmooth={};
-function cEma(k,v,a=0.15){cSmooth[k]=cSmooth[k]===undefined?v:a*v+(1-a)*cSmooth[k];return cSmooth[k]}
-
-function fingerW(lm,fi){
-  const pairs=[[5,6],[9,10],[13,14],[17,18]];
-  return dist(lm[pairs[fi][0]],lm[pairs[fi][1]])*1.8;
-}
+function cEma(k,v,a=0.14){ cSmooth[k]=cSmooth[k]===undefined?v:a*v+(1-a)*cSmooth[k]; return cSmooth[k]; }
+function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function palmW(lm){ return dist(lm[5],lm[17]); }
+function fingerW(lm,fi){ const p=[[5,6],[9,10],[13,14],[17,18]]; return dist(lm[p[fi][0]],lm[p[fi][1]])*1.8; }
 function classify(l,w){
   if(l>0.95&&w<0.35)return'almond';
   if(l<=0.95&&w>=0.35)return'square';
@@ -129,112 +108,199 @@ function classify(l,w){
   return'round';
 }
 
-// ── Nail color themes ─────────────────────────────────────────
+// ── PIXEL NAIL DETECTION ─────────────────────────────────────
+// Strategy: draw video to offscreen (original, non-mirrored).
+// MediaPipe landmark x is in original space → use lm.x*W directly.
+// Find brightest pixels in nail region → centroid = real nail center.
+
+function rgbToHsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0;
+  if(d>0){
+    if(mx===r) h=((g-b)/d+6)%6;
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+  }
+  return {h, s:mx===0?0:d/mx*100, v:mx*100};
+}
+
+// Is pixel brighter/lighter than skin? Nail = high V, low-medium S
+function isNailPixel(r,g,b, avgV){
+  const {s,v}=rgbToHsv(r,g,b);
+  return v > avgV+12 && s < 35;
+}
+
+// Sample offscreen canvas to find nail centroid (in original coords)
+// Returns {x,y} normalized [0,1] or null
+function findNailCentroid(lmTipX, lmTipY, lmDipX, lmDipY, W, H){
+  const dx=lmDipX-lmTipX, dy=lmDipY-lmTipY;
+  const fLen=Math.hypot(dx,dy);
+  if(fLen<0.02) return null;
+
+  // Nail region center: ~20% from tip toward dip
+  const cx=(lmTipX+dx*0.20)*W;
+  const cy=(lmTipY+dy*0.20)*H;
+  const rad=Math.max(6, fLen*Math.min(W,H)*0.55);
+
+  const x0=Math.max(0, Math.floor(cx-rad));
+  const y0=Math.max(0, Math.floor(cy-rad));
+  const x1=Math.min(W-1, Math.ceil(cx+rad));
+  const y1=Math.min(H-1, Math.ceil(cy+rad));
+  if(x1<=x0||y1<=y0) return null;
+
+  const rw=x1-x0, rh=y1-y0;
+  let imgData;
+  try{ imgData=offX.getImageData(x0,y0,rw,rh); }catch(e){ return null; }
+  const d=imgData.data;
+
+  // Average V of region
+  let totalV=0;
+  for(let i=0;i<d.length;i+=4){
+    totalV+=rgbToHsv(d[i],d[i+1],d[i+2]).v;
+  }
+  const avgV=totalV/(rw*rh);
+
+  // Weighted centroid of nail pixels
+  let sumX=0,sumY=0,count=0;
+  for(let y=0;y<rh;y++){
+    for(let x=0;x<rw;x++){
+      const i=(y*rw+x)*4;
+      if(isNailPixel(d[i],d[i+1],d[i+2],avgV)){
+        sumX+=x0+x;
+        sumY+=y0+y;
+        count++;
+      }
+    }
+  }
+
+  // Need enough nail pixels to trust result
+  const minPixels=rw*rh*0.06;
+  if(count<minPixels) return null;
+
+  return { x:sumX/count/W, y:sumY/count/H };
+}
+
+// ── Nail themes ───────────────────────────────────────────────
 const THEMES={
-  almond:{a:'rgba(255,215,225,0.92)',b:'rgba(235,140,165,0.88)',c:'rgba(195,82,115,0.85)',hi:'rgba(255,248,250,0.52)',stroke:'rgba(208,92,128,0.94)'},
-  oval:  {a:'rgba(222,195,255,0.92)',b:'rgba(172,120,242,0.88)',c:'rgba(118,58,196,0.85)',hi:'rgba(248,240,255,0.50)',stroke:'rgba(142,75,212,0.94)'},
-  square:{a:'rgba(255,110,120,0.92)',b:'rgba(220,38,62,0.90)',  c:'rgba(162,8,28,0.87)', hi:'rgba(255,180,185,0.48)',stroke:'rgba(175,10,35,0.96)'},
-  round: {a:'rgba(255,225,200,0.92)',b:'rgba(242,168,128,0.88)',c:'rgba(206,115,78,0.85)',hi:'rgba(255,245,235,0.50)',stroke:'rgba(216,125,88,0.94)'}
+  almond:{a:'rgba(255,215,225,0.92)',b:'rgba(235,140,165,0.88)',c:'rgba(195,82,115,0.85)',hi:'rgba(255,248,250,0.52)',s:'rgba(208,92,128,0.94)'},
+  oval:  {a:'rgba(222,195,255,0.92)',b:'rgba(172,120,242,0.88)',c:'rgba(118,58,196,0.85)',hi:'rgba(248,240,255,0.50)',s:'rgba(142,75,212,0.94)'},
+  square:{a:'rgba(255,110,120,0.92)',b:'rgba(220,38,62,0.90)',  c:'rgba(162,8,28,0.87)', hi:'rgba(255,180,185,0.48)',s:'rgba(175,10,35,0.96)'},
+  round: {a:'rgba(255,225,200,0.92)',b:'rgba(242,168,128,0.88)',c:'rgba(206,115,78,0.85)',hi:'rgba(255,245,235,0.50)',s:'rgba(216,125,88,0.94)'}
 };
 
-// ── Nail shape path (local: 0,0=tip, y+ toward cuticle) ───────
-function nailPath(shape, w, h){
+// ── Nail shape bezier path ────────────────────────────────────
+// Local coords: (0,0)=nail center/tip, y+ toward cuticle
+function nailPath(shape,w,h){
   const hw=w/2;
   ctx.beginPath();
   if(shape==='almond'){
     ctx.moveTo(0,0);
-    ctx.bezierCurveTo( hw*.5,h*.18,  hw,h*.44,  hw,h*.66);
-    ctx.bezierCurveTo( hw,  h*.90,  hw*.5,h,    0, h);
-    ctx.bezierCurveTo(-hw*.5,h,    -hw,  h*.90, -hw,h*.66);
-    ctx.bezierCurveTo(-hw,  h*.44, -hw*.5,h*.18, 0, 0);
+    ctx.bezierCurveTo( hw*.5,h*.18,  hw,h*.44, hw,h*.66);
+    ctx.bezierCurveTo( hw,  h*.90, hw*.5,h,  0,h);
+    ctx.bezierCurveTo(-hw*.5,h, -hw,h*.90, -hw,h*.66);
+    ctx.bezierCurveTo(-hw,h*.44, -hw*.5,h*.18, 0,0);
   } else if(shape==='oval'){
-    ctx.ellipse(0, h*.50, hw, h*.52, 0, 0, 2*Math.PI);
+    ctx.ellipse(0,h*.50,hw,h*.52,0,0,2*Math.PI);
   } else if(shape==='square'){
     const r=hw*.20;
-    ctx.moveTo(-hw+r,0);
-    ctx.lineTo(hw-r,0);   ctx.quadraticCurveTo(hw,0,  hw,r);
-    ctx.lineTo(hw,h-r);   ctx.quadraticCurveTo(hw,h,  hw-r,h);
-    ctx.lineTo(-hw+r,h);  ctx.quadraticCurveTo(-hw,h,-hw,h-r);
-    ctx.lineTo(-hw,r);    ctx.quadraticCurveTo(-hw,0,-hw+r,0);
-  } else { // round
-    ctx.ellipse(0, h*.46, hw*.88, h*.48, 0, 0, 2*Math.PI);
+    ctx.moveTo(-hw+r,0); ctx.lineTo(hw-r,0); ctx.quadraticCurveTo(hw,0,hw,r);
+    ctx.lineTo(hw,h-r);  ctx.quadraticCurveTo(hw,h,hw-r,h);
+    ctx.lineTo(-hw+r,h); ctx.quadraticCurveTo(-hw,h,-hw,h-r);
+    ctx.lineTo(-hw,r);   ctx.quadraticCurveTo(-hw,0,-hw+r,0);
+  } else {
+    ctx.ellipse(0,h*.46,hw*.88,h*.48,0,0,2*Math.PI);
   }
   ctx.closePath();
 }
 
-// ── Draw one nail ─────────────────────────────────────────────
-// PIP→TIP vector for stable angle (longer baseline)
-const TIPS=[8,12,16,20], PIPS=[6,10,14,18];
+// ── Draw nail ─────────────────────────────────────────────────
+const TIPS=[8,12,16,20], PIPS=[6,10,14,18], DIPS=[7,11,15,19];
 
-function drawNail(lm, fi, shape, W, H){
-  const tip=lm[TIPS[fi]], pip=lm[PIPS[fi]];
-
-  // Mirror x: (1 - x) because video is CSS-mirrored
-  const tx=(1-tip.x)*W, ty=tip.y*H;
-  const px=(1-pip.x)*W, py=pip.y*H;
-
-  const len=Math.hypot(tx-px, ty-py);
-  if(len<6) return;
-
-  const angle=Math.atan2(ty-py, tx-px); // PIP→TIP direction
-  const nH=len*0.78, nW=len*0.58;
+function drawNail(nx, ny, angle, nH, nW, shape){
   const t=THEMES[shape];
-
   ctx.save();
-  ctx.translate(tx, ty);
+  ctx.translate(nx,ny);
   ctx.rotate(angle);
-
-  // Clip + fill
   ctx.save();
-  nailPath(shape, nW, nH);
+  nailPath(shape,nW,nH);
   ctx.clip();
-
-  const g=ctx.createLinearGradient(-nW*.3, 0, nW*.5, nH);
-  g.addColorStop(0,   t.a);
-  g.addColorStop(0.45,t.b);
-  g.addColorStop(1,   t.c);
+  const g=ctx.createLinearGradient(-nW*.3,0,nW*.5,nH);
+  g.addColorStop(0,t.a); g.addColorStop(0.45,t.b); g.addColorStop(1,t.c);
   ctx.fillStyle=g;
   ctx.fillRect(-nW,-4,nW*2,nH+8);
-
-  // Main shine
   ctx.fillStyle=t.hi;
-  ctx.beginPath();
-  ctx.ellipse(-nW*.1, nH*.20, nW*.18, nH*.13, -0.2, 0, 2*Math.PI);
-  ctx.fill();
-
-  // Soft secondary shine
-  ctx.fillStyle='rgba(255,255,255,0.09)';
-  ctx.beginPath();
-  ctx.ellipse(nW*.05, nH*.54, nW*.28, nH*.20, 0.1, 0, 2*Math.PI);
-  ctx.fill();
-
-  ctx.restore(); // release clip
-
-  // Outline
-  nailPath(shape, nW, nH);
-  ctx.strokeStyle=t.stroke;
-  ctx.lineWidth=1.4;
-  ctx.stroke();
-
+  ctx.beginPath(); ctx.ellipse(-nW*.1,nH*.18,nW*.17,nH*.12,-0.2,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.ellipse(nW*.05,nH*.54,nW*.27,nH*.19,0.1,0,2*Math.PI); ctx.fill();
+  ctx.restore();
+  nailPath(shape,nW,nH);
+  ctx.strokeStyle=t.s; ctx.lineWidth=1.3; ctx.stroke();
   ctx.restore();
 }
 
-// ── Overlay ───────────────────────────────────────────────────
+// ── Main per-frame ────────────────────────────────────────────
 const NAMED=[{tip:8,dip:7,name:'Index'},{tip:12,dip:11,name:'Middle'},{tip:16,dip:15,name:'Ring'},{tip:20,dip:19,name:'Pinky'}];
 
-function drawOverlay(lm){
+function processLandmarks(rawLm){
   const W=canvas.width, H=canvas.height;
   ctx.clearRect(0,0,W,H);
+
+  // Update offscreen with current video frame (original, non-mirrored)
+  offC.width=W; offC.height=H;
+  offX.drawImage(video,0,0,W,H);
+
+  const lm=smoothLM(rawLm);
   const pw=palmW(lm);
 
   const shapes=NAMED.map(({tip,dip},fi)=>{
-    const nL=cEma('l'+fi, dist(lm[tip],lm[dip])/pw);
-    const nW=cEma('w'+fi, fingerW(lm,fi)/pw);
+    const nL=cEma('l'+fi,dist(lm[tip],lm[dip])/pw);
+    const nW=cEma('w'+fi,fingerW(lm,fi)/pw);
     return classify(nL,nW);
   });
 
-  shapes.forEach((shape,fi)=>drawNail(lm,fi,shape,W,H));
-  return shapes;
+  NAMED.forEach(({tip,dip},fi)=>{
+    const tipLM=lm[TIPS[fi]], pipLM=lm[PIPS[fi]], dipLM=lm[DIPS[fi]];
+
+    // ── Step 1: landmark-based estimate (original coords for pixel reading)
+    const origTipX=tipLM.x, origTipY=tipLM.y;
+    const origDipX=dipLM.x, origDipY=dipLM.y;
+
+    // ── Step 2: pixel detection → refined nail center (original coords)
+    const refined=findNailCentroid(origTipX,origTipY,origDipX,origDipY,W,H);
+
+    // ── Step 3: use refined if found, else fallback to landmark estimate
+    let rawNailX, rawNailY;
+    if(refined){
+      rawNailX=refined.x;
+      rawNailY=refined.y;
+    } else {
+      // Fallback: 18% from tip toward dip
+      rawNailX=origTipX+(origDipX-origTipX)*0.18;
+      rawNailY=origTipY+(origDipY-origTipY)*0.18;
+    }
+
+    // ── Step 4: Kalman smooth the refined position
+    const smoothNailX=getRefKF(fi,'x').f(rawNailX);
+    const smoothNailY=getRefKF(fi,'y').f(rawNailY);
+
+    // ── Step 5: mirror x for display (video is CSS scaleX(-1))
+    const dispX=(1-smoothNailX)*W;
+    const dispY=smoothNailY*H;
+
+    // ── Step 6: angle from PIP→TIP in display coords
+    const tx=(1-tipLM.x)*W, ty=tipLM.y*H;
+    const px=(1-pipLM.x)*W, py=pipLM.y*H;
+    const len=Math.hypot(tx-px,ty-py);
+    if(len<6) return;
+    const angle=Math.atan2(ty-py,tx-px);
+    const nH=len*0.80, nW=len*0.58;
+
+    drawNail(dispX,dispY,angle,nH,nW,shapes[fi]);
+  });
+
+  renderChips(shapes);
 }
 
 function renderChips(shapes){
@@ -242,23 +308,17 @@ function renderChips(shapes){
   NAMED.forEach(({name},fi)=>{
     const s=shapes[fi];
     const c=document.createElement('span');
-    c.className='chip '+s;
-    c.textContent=name+': '+s;
+    c.className='chip '+s; c.textContent=name+': '+s;
     chipsEl.appendChild(c);
   });
 }
 
 // ── Canvas resize ─────────────────────────────────────────────
-function resize(){
-  canvas.width=canvas.parentElement.clientWidth;
-  canvas.height=canvas.parentElement.clientHeight;
-}
-window.addEventListener('resize',resize);
-resize();
+function resize(){ canvas.width=canvas.parentElement.clientWidth; canvas.height=canvas.parentElement.clientHeight; }
+window.addEventListener('resize',resize); resize();
 
 // ── RAF loop ──────────────────────────────────────────────────
-let hands=null, busy=false, lt=performance.now(), fps=0, raf=null;
-
+let hands=null,busy=false,lt=performance.now(),fps=0,raf=null;
 function loop(){
   raf=requestAnimationFrame(loop);
   if(!hands||busy||video.readyState<2) return;
@@ -269,36 +329,24 @@ function loop(){
   hands.send({image:video}).catch(()=>{}).finally(()=>{busy=false});
 }
 
-// ── MediaPipe callback ────────────────────────────────────────
 function onResults(r){
   if(!r.multiHandLandmarks?.length){
-    statusBadge.textContent='хайж байна…';
-    statusBadge.className='badge warn';
-    resetKF(); cSmooth={};
+    statusBadge.textContent='хайж байна…'; statusBadge.className='badge warn';
+    resetAll();
     ctx.clearRect(0,0,canvas.width,canvas.height);
     chipsEl.innerHTML='<span class="ph">Гараа камерт үзүүлнэ үү</span>';
     return;
   }
-  statusBadge.textContent='илэрсэн ✓';
-  statusBadge.className='badge';
-  const lm=smoothLM(r.multiHandLandmarks[0]);
-  const shapes=drawOverlay(lm);
-  renderChips(shapes);
+  statusBadge.textContent='илэрсэн ✓'; statusBadge.className='badge';
+  processLandmarks(r.multiHandLandmarks[0]);
 }
 
-// ── App start ─────────────────────────────────────────────────
-function showErr(msg){
-  errMsg.textContent=msg;
-  errMsg.style.display='block';
-  loadEl.style.display='none';
-}
-
+// ── Load + start ──────────────────────────────────────────────
 function loadScript(src){
   return new Promise((res,rej)=>{
-    if(document.querySelector(`script[src="${src}"]`)){res();return}
     const s=document.createElement('script');
     s.src=src; s.crossOrigin='anonymous';
-    s.onload=res; s.onerror=()=>rej(new Error('Script load failed'));
+    s.onload=res; s.onerror=rej;
     document.head.appendChild(s);
   });
 }
@@ -311,43 +359,28 @@ async function startApp(){
   let stream;
   try{
     stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
-      audio:false
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
     });
   }catch(e){
-    showErr(e.name==='NotAllowedError'
-      ? '❌ Камерын эрх татгалзсан — Chrome → 🔒 → Камер → Зөвшөөрөх → refresh'
-      : '❌ Камер нээгдсэнгүй: '+e.message);
+    loadMsg.textContent=e.name==='NotAllowedError'
+      ?'❌ Камерын эрх татгалзсан — Chrome → 🔒 → Зөвшөөрөх → refresh'
+      :'❌ Камер нээгдсэнгүй: '+e.message;
     return;
   }
 
   video.srcObject=stream;
-  await new Promise(res=>{video.onloadedmetadata=res});
-  try{await video.play()}catch(e){}
+  await new Promise(res=>{video.onloadedmetadata=res;});
+  try{await video.play();}catch(e){}
 
   loadMsg.textContent='MediaPipe татаж байна…';
-  try{
-    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js');
-  }catch(e){
-    showErr('❌ Сүлжээний алдаа — интернэт шалгана уу');
-    return;
-  }
+  try{ await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js'); }
+  catch(e){ loadMsg.textContent='❌ Сүлжээний алдаа'; return; }
 
   loadMsg.textContent='Загвар бэлдэж байна…';
   hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
-  hands.setOptions({
-    maxNumHands:1,
-    modelComplexity:1,
-    minDetectionConfidence:0.72,
-    minTrackingConfidence:0.65
-    // selfieMode НЭМЭХГҮй — бид гараар x координатыг mirror хийнэ
-  });
+  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.72,minTrackingConfidence:0.65});
   hands.onResults(onResults);
-
-  try{await hands.send({image:video})}catch(e){
-    showErr('❌ Загвар ачаалах амжилтгүй: '+e.message);
-    return;
-  }
+  try{await hands.send({image:video});}catch(e){loadMsg.textContent='❌ Загвар ачаалах амжилтгүй';return;}
 
   loadEl.style.display='none';
   loop();
