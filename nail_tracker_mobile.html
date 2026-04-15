@@ -3,19 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>💅 Nail Tracker</title>
+<title>🎯 Precision Nail Math</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0a;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif}
-.container{position:relative;width:100%;max-width:720px;aspect-ratio:4/3;border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.6)}
+body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif}
+.container{position:relative;width:100%;max-width:720px;aspect-ratio:4/3;border-radius:16px;overflow:hidden}
 video,canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
-video{transform:scaleX(-1)}
-canvas{transform:scaleX(-1);z-index:5}
-.hud{position:absolute;top:16px;left:16px;z-index:10;display:flex;gap:10px}
-.badge{background:rgba(0,0,0,0.6);color:#aaffaa;padding:6px 14px;border-radius:30px;font-size:13px;font-weight:500;backdrop-filter:blur(4px)}
-.badge.warn{color:#ffaa88}
-.info{position:absolute;bottom:20px;left:20px;right:20px;z-index:10;display:flex;justify-content:center}
-.info span{background:rgba(0,0,0,0.5);color:#ccc;padding:8px 20px;border-radius:40px;font-size:14px;backdrop-filter:blur(4px)}
+/* ЧУХАЛ: Canvas-ийг mirror хийхгүй! MediaPipe selfieMode өөрөө хийнэ */
+.hud{position:absolute;top:12px;left:12px;z-index:10;display:flex;gap:8px}
+.badge{background:rgba(0,0,0,0.7);color:#8f8;padding:5px 12px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px)}
+.badge.warn{color:#fa8}
 </style>
 </head>
 <body>
@@ -24,184 +21,286 @@ canvas{transform:scaleX(-1);z-index:5}
   <canvas id="canvas"></canvas>
   <div class="hud">
     <span class="badge" id="fps">-- fps</span>
-    <span class="badge warn" id="status">ачаалж байна...</span>
-  </div>
-  <div class="info">
-    <span id="nailInfo">💅 Гараа камерт үзүүлнэ үү</span>
+    <span class="badge warn" id="status">хайж байна</span>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
 <script>
-const video   = document.getElementById('video');
-const canvas  = document.getElementById('canvas');
-const ctx     = canvas.getContext('2d');
-const fpsEl   = document.getElementById('fps');
-const statusEl= document.getElementById('status');
-const infoEl  = document.getElementById('nailInfo');
+// ═══════════════════════════════════════════════════════════════════════════
+// МАТЕМАТИК ЗӨВ ТООЦООЛОЛ - ГҮНЗГИЙ ШИНЖИЛГЭЭНИЙ ҮР ДҮН
+// ═══════════════════════════════════════════════════════════════════════════
 
-// ── Kalman Filter ──────────────────────────────────────────
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const fpsEl = document.getElementById('fps');
+const statusEl = document.getElementById('status');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KALMAN FILTER (X, Y тусдаа)
+// ═══════════════════════════════════════════════════════════════════════════
 class KalmanFilter {
-  constructor(q=0.001, r=0.01){ this.q=q; this.r=r; this.p=1; this.k=0; this.x=null; }
-  filter(v){ if(this.x===null){this.x=v;return v;} this.p+=this.q; this.k=this.p/(this.p+this.r); this.x+=this.k*(v-this.x); this.p=(1-this.k)*this.p; return this.x; }
-  reset(){ this.x=null; this.p=1; }
+  constructor(q=0.002, r=0.01) {
+    this.q = q;
+    this.r = r;
+    this.p = 1;
+    this.k = 0;
+    this.x = null;
+  }
+  filter(value) {
+    if (this.x === null) { this.x = value; return value; }
+    this.p = this.p + this.q;
+    this.k = this.p / (this.p + this.r);
+    this.x = this.x + this.k * (value - this.x);
+    this.p = (1 - this.k) * this.p;
+    return this.x;
+  }
+  reset() { this.x = null; this.p = 1; }
 }
 
-// ── Per-finger filters ─────────────────────────────────────
+// Хуруу бүрийн tip, dip цэгүүд
 const filters = {
-  index:  { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
-  middle: { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
-  ring:   { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
-  pinky:  { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} }
+  index:  { tip: {x:new KalmanFilter(), y:new KalmanFilter()}, dip: {x:new KalmanFilter(), y:new KalmanFilter()} },
+  middle: { tip: {x:new KalmanFilter(), y:new KalmanFilter()}, dip: {x:new KalmanFilter(), y:new KalmanFilter()} },
+  ring:   { tip: {x:new KalmanFilter(), y:new KalmanFilter()}, dip: {x:new KalmanFilter(), y:new KalmanFilter()} },
+  pinky:  { tip: {x:new KalmanFilter(), y:new KalmanFilter()}, dip: {x:new KalmanFilter(), y:new KalmanFilter()} }
 };
 
-// ── Landmark indices ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// ХУРУУНЫ ИНДЕКСҮҮД
+// ═══════════════════════════════════════════════════════════════════════════
 const FINGERS = {
-  index:  { tip:8,  dip:7  },
-  middle: { tip:12, dip:11 },
-  ring:   { tip:16, dip:15 },
-  pinky:  { tip:20, dip:19 }
+  index:  { tip: 8,  dip: 7 },
+  middle: { tip: 12, dip: 11 },
+  ring:   { tip: 16, dip: 15 },
+  pinky:  { tip: 20, dip: 19 }
 };
 
-// ── Math ───────────────────────────────────────────────────
-function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
-
-function nailParams(tip, dip){
+// ═══════════════════════════════════════════════════════════════════════════
+// ЗӨВ МАТЕМАТИК ТООЦООЛОЛ
+// ═══════════════════════════════════════════════════════════════════════════
+function calculateNailParams(tip, dip, canvasW, canvasH) {
+  // 1. Вектор: TIP → DIP
+  const dx = dip.x - tip.x;
+  const dy = dip.y - tip.y;
+  
+  // 2. Хурууны урт (нормчилсон координатад)
+  const fingerLen = Math.sqrt(dx*dx + dy*dy);
+  
+  // 3. Хумсны байрлал: TIP + (DIP-TIP) × 0.18
+  const nailX = tip.x + dx * 0.18;
+  const nailY = tip.y + dy * 0.18;
+  
+  // 4. Хумсны хэмжээ (нормчилсон)
+  const nailLen = fingerLen * 0.72;
+  const nailWid = nailLen * 0.58;
+  
+  // 5. Өнцөг: DIP→TIP векторын өнцөг + 90°
+  //    atan2(dy, dx) нь TIP→DIP чиглэл
+  //    +90° нэмснээр хумсны урт тэнхлэг хуруутай параллель болно
+  const angle = Math.atan2(dy, dx) + Math.PI / 2;
+  
+  // 6. Canvas координат руу хөрвүүлэх
+  //    MediaPipe-ийн x,y нь [0,1] хооронд
+  const canvasX = nailX * canvasW;
+  const canvasY = nailY * canvasH;
+  
+  // 7. Масштаб: хурууны уртыг пиксел рүү хөрвүүлэх
+  //    fingerLen нь нормчилсон утга (0..1)
+  //    Үүнийг canvas-ийн диагоналиар үржүүлж бодит пиксел болгоно
+  const diagonal = Math.sqrt(canvasW*canvasW + canvasH*canvasH);
+  const pixelFingerLen = fingerLen * diagonal * 0.85; // 0.85 = тохируулгын коэффициент
+  
+  const pixelNailLen = pixelFingerLen * 0.72;
+  const pixelNailWid = pixelNailLen * 0.58;
+  
   return {
-    x: tip.x + (dip.x-tip.x)*0.18,
-    y: tip.y + (dip.y-tip.y)*0.18,
-    length: dist(tip,dip)*0.72,
-    width:  dist(tip,dip)*0.72*0.58,
-    angle:  Math.atan2(dip.y-tip.y, dip.x-tip.x) + Math.PI/2
+    x: canvasX,
+    y: canvasY,
+    length: pixelNailLen,
+    width: pixelNailWid,
+    angle: angle
   };
 }
 
-// ── Draw nail ──────────────────────────────────────────────
-function drawNail(p, W, H){
-  const cx=p.x*W, cy=p.y*H;
-  const avg=(W+H)/2;
-  const nW=p.width*avg, nL=p.length*avg;
-
+// ═══════════════════════════════════════════════════════════════════════════
+// ХУМС ЗУРАХ (БОДИТ ХАРАГДАХ)
+// ═══════════════════════════════════════════════════════════════════════════
+function drawNail(ctx, params) {
+  const { x, y, length, width, angle } = params;
+  
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(p.angle);
-
-  ctx.shadowColor='rgba(0,0,0,0.45)';
-  ctx.shadowBlur=10;
-  ctx.shadowOffsetY=3;
-
-  // nail shape
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  
+  // Сүүдэр
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 3;
+  
+  // Хумсны суурь хэлбэр
   ctx.beginPath();
-  ctx.ellipse(0, 0, nW/2, nL/2, 0, 0, 2*Math.PI);
-
-  // natural gradient
-  const g=ctx.createRadialGradient(-nW*.2,-nL*.1,nW*.1, nW*.1,nL*.15,nL*.7);
-  g.addColorStop(0,'#fdf4e8');
-  g.addColorStop(0.5,'#ecd9c2');
-  g.addColorStop(1,'#d4bda6');
-  ctx.fillStyle=g;
+  ctx.ellipse(0, 0, width/2, length/2, 0, 0, 2 * Math.PI);
+  
+  // Градиент
+  const gradient = ctx.createRadialGradient(
+    -width*0.15, -length*0.1, width*0.1,
+    width*0.1, length*0.1, length*0.6
+  );
+  gradient.addColorStop(0, '#fef7f0');
+  gradient.addColorStop(0.4, '#ecd9c8');
+  gradient.addColorStop(1, '#d2bba8');
+  
+  ctx.fillStyle = gradient;
   ctx.fill();
-
-  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-
-  ctx.strokeStyle='#b7a392';
-  ctx.lineWidth=1.4;
+  
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  
+  // Хүрээ
+  ctx.strokeStyle = '#b7a392';
+  ctx.lineWidth = Math.max(1.2, width * 0.06);
   ctx.stroke();
-
-  // main shine
+  
+  // Гялбаа
   ctx.beginPath();
-  ctx.ellipse(-nW*.12,-nL*.15,nW*.15,nL*.18,0,0,2*Math.PI);
-  ctx.fillStyle='rgba(255,255,255,0.40)';
+  ctx.ellipse(-width*0.12, -length*0.12, width*0.14, length*0.16, 0, 0, 2*Math.PI);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.fill();
-
-  // soft secondary shine
+  
   ctx.beginPath();
-  ctx.ellipse(nW*.08,nL*.05,nW*.10,nL*.12,0.2,0,2*Math.PI);
-  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.ellipse(width*0.08, length*0.08, width*0.1, length*0.12, 0.2, 0, 2*Math.PI);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
   ctx.fill();
-
-  // free edge
+  
+  // Чөлөөт ирмэг
   ctx.beginPath();
-  ctx.ellipse(0,nL*.3,nW*.4,nL*.12,0,0,2*Math.PI);
-  ctx.fillStyle='rgba(250,240,230,0.42)';
+  ctx.ellipse(0, length*0.28, width*0.38, length*0.1, 0, 0, 2*Math.PI);
+  ctx.fillStyle = 'rgba(250,240,230,0.4)';
   ctx.fill();
-
+  
   ctx.restore();
 }
 
-// ── Results callback ───────────────────────────────────────
-let fps=0, lastTime=performance.now(), frameCount=0;
-
-function onResults(results){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  if(!results.multiHandLandmarks?.length){
-    statusEl.textContent='хайж байна...';
-    statusEl.className='badge warn';
-    infoEl.textContent='💅 Гараа камерт үзүүлнэ үү';
-    // reset filters
-    Object.values(filters).forEach(f=>{
-      f.tip.x.reset();f.tip.y.reset();
-      f.dip.x.reset();f.dip.y.reset();
+// ═══════════════════════════════════════════════════════════════════════════
+// MEDIAPIPE CALLBACK
+// ═══════════════════════════════════════════════════════════════════════════
+function onResults(results) {
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    statusEl.textContent = 'хайж байна';
+    statusEl.className = 'badge warn';
+    // Reset filters
+    Object.values(filters).forEach(f => {
+      f.tip.x.reset(); f.tip.y.reset();
+      f.dip.x.reset(); f.dip.y.reset();
     });
     return;
   }
-
-  statusEl.textContent='✓ илэрсэн';
-  statusEl.className='badge';
-
-  const lm=results.multiHandLandmarks[0];
-  let count=0;
-
-  Object.entries(FINGERS).forEach(([name,idx])=>{
-    const rt=lm[idx.tip], rd=lm[idx.dip];
-    if(!rt||!rd) return;
-    const f=filters[name];
-    const tip={x:f.tip.x.filter(rt.x), y:f.tip.y.filter(rt.y)};
-    const dip={x:f.dip.x.filter(rd.x), y:f.dip.y.filter(rd.y)};
-    drawNail(nailParams(tip,dip), canvas.width, canvas.height);
-    count++;
+  
+  statusEl.textContent = '✓ илэрсэн';
+  statusEl.className = 'badge';
+  
+  const lm = results.multiHandLandmarks[0];
+  
+  Object.entries(FINGERS).forEach(([name, idx]) => {
+    const rawTip = lm[idx.tip];
+    const rawDip = lm[idx.dip];
+    
+    if (!rawTip || !rawDip) return;
+    
+    const f = filters[name];
+    
+    // Kalman шүүлт
+    const tip = {
+      x: f.tip.x.filter(rawTip.x),
+      y: f.tip.y.filter(rawTip.y)
+    };
+    const dip = {
+      x: f.dip.x.filter(rawDip.x),
+      y: f.dip.y.filter(rawDip.y)
+    };
+    
+    // Тооцоолол
+    const params = calculateNailParams(tip, dip, w, h);
+    
+    // Зурах
+    drawNail(ctx, params);
   });
+}
 
-  infoEl.textContent=`💅 ${count} хурууны хумс`;
-
-  // FPS
+// ═══════════════════════════════════════════════════════════════════════════
+// FPS ТООЦООЛОЛ
+// ═══════════════════════════════════════════════════════════════════════════
+let frameCount = 0, lastTime = performance.now();
+function updateFPS() {
   frameCount++;
-  const now=performance.now();
-  if(now-lastTime>=250){
-    fps=Math.round(frameCount*1000/(now-lastTime));
-    fpsEl.textContent=fps+' fps';
-    frameCount=0; lastTime=now;
+  const now = performance.now();
+  if (now - lastTime >= 200) {
+    const fps = Math.round(frameCount * 1000 / (now - lastTime));
+    fpsEl.textContent = fps + ' fps';
+    frameCount = 0;
+    lastTime = now;
   }
 }
 
-// ── Init ───────────────────────────────────────────────────
-async function start(){
-  const stream=await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},
-    audio:false
-  }).catch(e=>{statusEl.textContent='❌ камерын алдаа';console.error(e);return null;});
-  if(!stream) return;
-
-  video.srcObject=stream;
-  await new Promise(res=>{video.onloadedmetadata=res;});
-  await video.play();
-  canvas.width=video.videoWidth||1280;
-  canvas.height=video.videoHeight||720;
-
-  statusEl.textContent='ачаалж байна...';
-
-  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
-  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.6,selfieMode:true});
-  hands.onResults(onResults);
-  await hands.initialize();
-
-  statusEl.textContent='хайж байна...';
-
-  (function loop(){
-    if(video.readyState>=2) hands.send({image:video}).catch(()=>{});
-    requestAnimationFrame(loop);
-  })();
+// ═══════════════════════════════════════════════════════════════════════════
+// ЭХЛҮҮЛЭХ
+// ═══════════════════════════════════════════════════════════════════════════
+async function start() {
+  try {
+    // Камер
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    await video.play();
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // MediaPipe
+    const hands = new Hands({
+      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`
+    });
+    
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.6,
+      selfieMode: true  // MediaPipe өөрөө mirror хийнэ
+    });
+    
+    hands.onResults((results) => {
+      onResults(results);
+      updateFPS();
+    });
+    
+    await hands.initialize();
+    
+    // Main loop
+    function loop() {
+      if (hands && video.readyState >= 2) {
+        hands.send({ image: video }).catch(() => {});
+      }
+      requestAnimationFrame(loop);
+    }
+    loop();
+    
+    statusEl.textContent = 'бэлэн';
+  } catch (e) {
+    statusEl.textContent = '❌ алдаа';
+    console.error(e);
+  }
 }
 
 start();
