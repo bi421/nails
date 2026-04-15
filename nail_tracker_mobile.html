@@ -15,10 +15,12 @@ canvas{z-index:10}
 .badge{background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);color:#fff;padding:6px 14px;border-radius:30px;font-size:13px;border:1px solid rgba(255,255,255,0.15)}
 .badge.ok{color:#88ffaa}
 .badge.deepar{background:linear-gradient(135deg,#1a1a3e,#2d1b4e);color:#a78bfa;border-color:#8b5cf6}
+.badge.error{background:rgba(200,50,50,0.7);color:#ffaaaa}
 .controls{position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:20;padding:0 16px;flex-wrap:wrap}
 .btn{background:rgba(30,30,50,0.95);backdrop-filter:blur(8px);color:#fff;border:1px solid #8b5cf6;padding:12px 18px;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;min-width:90px}
 .btn.active{background:#8b5cf6;color:#fff}
 .btn:active{transform:scale(0.96)}
+.btn:disabled{opacity:0.5;pointer-events:none}
 .panel{background:#121212;border-top:1px solid #222;padding:16px 16px 22px}
 .panel-title{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
 .effects{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
@@ -30,7 +32,9 @@ canvas{z-index:10}
 .status{background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);color:#a78bfa;padding:6px 16px;border-radius:30px;font-size:12px;border:1px solid #8b5cf6;text-align:center}
 .loading-screen{position:absolute;inset:0;background:#0a0a0a;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
 .spinner{width:50px;height:50px;border:3px solid #1a1a1a;border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
-.loading-screen p{color:#888;font-size:14px}
+.loading-screen p{color:#888;font-size:14px;max-width:280px;text-align:center;line-height:1.5}
+.loading-screen .error-detail{color:#ff6b6b;font-size:12px;max-width:300px;word-break:break-all}
+.retry-btn{background:#8b5cf6;color:#fff;border:none;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:600;margin-top:10px;cursor:pointer}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -43,6 +47,8 @@ canvas{z-index:10}
     <div class="loading-screen" id="loadingScreen">
       <div class="spinner"></div>
       <p id="loadingText">SDK ачаалж байна...</p>
+      <div id="errorDetail" class="error-detail"></div>
+      <button class="retry-btn" id="retryBtn" style="display:none">↻ Дахин оролдох</button>
     </div>
     
     <div class="hud">
@@ -55,11 +61,11 @@ canvas{z-index:10}
     </div>
     
     <div class="controls">
-      <button class="btn active" data-effect="none">🚫 Үндсэн</button>
-      <button class="btn" data-effect="red">❤️ Улаан</button>
-      <button class="btn" data-effect="pink">💗 Ягаан</button>
-      <button class="btn" data-effect="french">🤍 Франц</button>
-      <button class="btn" data-effect="glitter">✨ Гялтганасан</button>
+      <button class="btn active" data-effect="none" disabled>🚫 Үндсэн</button>
+      <button class="btn" data-effect="red" disabled>❤️ Улаан</button>
+      <button class="btn" data-effect="pink" disabled>💗 Ягаан</button>
+      <button class="btn" data-effect="french" disabled>🤍 Франц</button>
+      <button class="btn" data-effect="glitter" disabled>✨ Гялтганасан</button>
     </div>
   </div>
   
@@ -70,32 +76,13 @@ canvas{z-index:10}
         <span class="icon">💅</span>
         <span class="name">Байгалийн</span>
       </div>
-      <div class="effect-item" data-effect="almond">
-        <span class="icon">✨</span>
-        <span class="name">Almond</span>
-      </div>
-      <div class="effect-item" data-effect="oval">
-        <span class="icon">💖</span>
-        <span class="name">Oval</span>
-      </div>
-      <div class="effect-item" data-effect="square">
-        <span class="icon">❤️</span>
-        <span class="name">Square</span>
-      </div>
-      <div class="effect-item" data-effect="coffin">
-        <span class="icon">🤍</span>
-        <span class="name">Coffin</span>
-      </div>
     </div>
   </div>
 </div>
 
-<!-- DeepAR SDK - ЗӨВ CDN -->
-<script src="https://cdn.deepar.ai/deepar/deepar.js"></script>
-
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// DEEPAR NAIL TRY-ON · ЗӨВ АЖИЛЛАДАГ ХУВИЛБАР
+// DEEPAR NAIL TRY-ON · ЗАСВАРЛАСАН CDN + АЛДАА ШАЛГАГЧ
 // ═══════════════════════════════════════════════════════════════════════════
 
 (function() {
@@ -111,13 +98,14 @@ canvas{z-index:10}
     : 'e64e81e6bc6b69f969a5f3d7fa2812765bbf1e32084efb2723c45c4da36ea07b69f985105e6413df';
 
   console.log('📱 Төхөөрөмж:', isIOS ? 'iOS' : 'Android');
-  console.log('🔑 License:', LICENSE_KEY.substring(0, 20) + '...');
 
   // DOM элементүүд
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const loadingScreen = document.getElementById('loadingScreen');
   const loadingText = document.getElementById('loadingText');
+  const errorDetail = document.getElementById('errorDetail');
+  const retryBtn = document.getElementById('retryBtn');
   const statusText = document.getElementById('statusText');
   const deeparBadge = document.getElementById('deeparBadge');
   const fpsBadge = document.getElementById('fpsBadge');
@@ -125,65 +113,126 @@ canvas{z-index:10}
   let deepAR = null;
   let fps = 0, frameCount = 0, lastTime = performance.now();
 
-  // DeepAR объект байгаа эсэхийг шалгах
-  function waitForDeepAR() {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DEEPAR SDK АЧААЛАХ (ОЛОН CDN ТУРШИХ)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const CDN_URLS = [
+    'https://cdn.deepar.ai/deepar/deepar.js',
+    'https://unpkg.com/deepar@5.8.0/dist/deepar.js',
+    'https://cdn.jsdelivr.net/npm/deepar@5.8.0/dist/deepar.js'
+  ];
+
+  let currentCDNIndex = 0;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      // Өмнөх script-үүдийг устгах
+      document.querySelectorAll('script[data-deepar]').forEach(s => s.remove());
+      
+      const script = document.createElement('script');
+      script.setAttribute('data-deepar', 'true');
+      script.src = src;
+      script.onload = () => {
+        console.log('✅ CDN ачааллаа:', src);
+        resolve();
+      };
+      script.onerror = () => {
+        console.warn('❌ CDN ачаалсангүй:', src);
+        reject(new Error(`CDN ачаалсангүй: ${src}`));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadDeepARSDK() {
+    for (let i = 0; i < CDN_URLS.length; i++) {
+      try {
+        loadingText.textContent = `SDK ачаалж байна... (CDN ${i + 1}/${CDN_URLS.length})`;
+        await loadScript(CDN_URLS[i]);
+        
+        // SDK бэлэн болтол хүлээх
+        await waitForDeepARObject();
+        return true;
+      } catch (error) {
+        console.error('CDN алдаа:', error.message);
+        if (i === CDN_URLS.length - 1) {
+          throw new Error('Бүх CDN ачаалсангүй. Интернет холболтоо шалгана уу.');
+        }
+      }
+    }
+    return false;
+  }
+
+  function waitForDeepARObject() {
     return new Promise((resolve, reject) => {
       if (typeof deepar !== 'undefined') {
-        console.log('✅ DeepAR SDK олдлоо');
+        console.log('✅ deepar объект олдлоо');
         resolve();
         return;
       }
       
       let attempts = 0;
-      const maxAttempts = 50;
+      const maxAttempts = 30;
       const interval = setInterval(() => {
         attempts++;
-        loadingText.textContent = `SDK хүлээж байна... (${attempts}/${maxAttempts})`;
         
         if (typeof deepar !== 'undefined') {
           clearInterval(interval);
-          console.log('✅ DeepAR SDK олдлоо');
+          console.log('✅ deepar объект олдлоо');
           resolve();
         } else if (attempts >= maxAttempts) {
           clearInterval(interval);
-          reject(new Error('DeepAR SDK ачаалсангүй. Интернет холболтоо шалгана уу.'));
+          reject(new Error('deepar объект үүсээгүй. SDK-ийн хувилбар тохирохгүй байж магадгүй.'));
         }
       }, 200);
     });
   }
 
-  // DeepAR эхлүүлэх
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DEEPAR ЭХЛҮҮЛЭХ
+  // ═══════════════════════════════════════════════════════════════════════════
   async function initDeepAR() {
     try {
-      // SDK хүлээх
-      await waitForDeepAR();
+      // SDK ачаалах
+      await loadDeepARSDK();
       
       loadingText.textContent = 'Камер нээж байна...';
+      
+      // Камерын тохиргоо
+      const constraints = {
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      // Эхлээд камер нээх
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      await video.play();
+      
+      loadingText.textContent = 'DeepAR эхлүүлж байна...';
       
       // DeepAR эхлүүлэх
       deepAR = await deepar.initialize({
         licenseKey: LICENSE_KEY,
         canvas: canvas,
-        video: video,
-        cameraConfig: {
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        }
+        video: video
       });
       
       console.log('✅ DeepAR эхэллээ');
       
-      loadingText.textContent = 'Эффект ачаалж байна...';
-      
       // Анхдагч эффект
       await deepAR.switchEffect(null);
       
+      // UI шинэчлэх
       statusText.textContent = '✓ Бэлэн · Гараа харуулна уу';
       deeparBadge.textContent = '💅 DeepAR ✓';
       deeparBadge.classList.add('ok');
+      
+      // Товчнууд идэвхжүүлэх
+      document.querySelectorAll('.btn').forEach(btn => btn.disabled = false);
       
       // Ачаалах дэлгэц нуух
       loadingScreen.style.opacity = '0';
@@ -206,30 +255,39 @@ canvas{z-index:10}
       measureFPS();
       
     } catch (error) {
-      console.error('❌ DeepAR алдаа:', error);
-      loadingText.textContent = 'Алдаа: ' + error.message;
-      statusText.textContent = '❌ ' + error.message;
+      console.error('❌ Алдаа:', error);
+      
+      let errorMsg = error.message;
+      if (errorMsg.includes('license')) {
+        errorMsg = 'Лиценз түлхүүр буруу эсвэл хүчингүй байна.';
+      } else if (errorMsg.includes('camera')) {
+        errorMsg = 'Камер нээх боломжгүй. Камерын зөвшөөрөл өгсөн эсэхийг шалгана уу.';
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+        errorMsg = 'Интернет холболт амжилтгүй. Wi-Fi эсвэл мобайл датагаа шалгана уу.';
+      }
+      
+      loadingText.textContent = '❌ Алдаа гарлаа';
+      errorDetail.textContent = errorMsg;
+      retryBtn.style.display = 'block';
+      deeparBadge.textContent = '💅 Алдаа';
+      deeparBadge.classList.add('error');
+      statusText.textContent = '❌ ' + errorMsg.substring(0, 30);
     }
   }
 
-  // Эффект солих
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ЭФФЕКТ СОЛИХ
+  // ═══════════════════════════════════════════════════════════════════════════
   const EFFECTS = {
     none: null,
     red: 'https://cdn.deepar.ai/effects/red-nails',
     pink: 'https://cdn.deepar.ai/effects/pink-nails',
     french: 'https://cdn.deepar.ai/effects/french-nails',
-    glitter: 'https://cdn.deepar.ai/effects/glitter-nails',
-    almond: 'https://cdn.deepar.ai/effects/almond-nude',
-    oval: 'https://cdn.deepar.ai/effects/oval-pink',
-    square: 'https://cdn.deepar.ai/effects/square-red',
-    coffin: 'https://cdn.deepar.ai/effects/coffin-white'
+    glitter: 'https://cdn.deepar.ai/effects/glitter-nails'
   };
 
   async function switchEffect(effectKey) {
-    if (!deepAR) {
-      console.warn('DeepAR эхлээгүй байна');
-      return;
-    }
+    if (!deepAR) return;
     
     try {
       statusText.textContent = 'Эффект ачаалж байна...';
@@ -243,13 +301,8 @@ canvas{z-index:10}
         statusText.textContent = '✓ Байгалийн хумс';
       }
       
-      // UI шинэчлэх
       document.querySelectorAll('[data-effect]').forEach(el => {
-        if (el.dataset.effect === effectKey) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
+        el.classList.toggle('active', el.dataset.effect === effectKey);
       });
       
     } catch (error) {
@@ -258,17 +311,24 @@ canvas{z-index:10}
     }
   }
 
-  // Event listeners
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EVENT LISTENERS
+  // ═══════════════════════════════════════════════════════════════════════════
   document.querySelectorAll('[data-effect]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      switchEffect(btn.dataset.effect);
-    });
+    btn.addEventListener('click', () => switchEffect(btn.dataset.effect));
   });
 
-  // Хуудас хаагдахад
+  retryBtn.addEventListener('click', () => {
+    errorDetail.textContent = '';
+    retryBtn.style.display = 'none';
+    loadingText.textContent = 'SDK ачаалж байна...';
+    initDeepAR();
+  });
+
   window.addEventListener('beforeunload', () => {
-    if (deepAR) {
-      deepAR.dispose();
+    if (deepAR) deepAR.dispose();
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
     }
   });
 
