@@ -3,368 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Nail Advisor</title>
+<title>💅 Nail Tracker</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{background:#0a0a0a;color:#f0f0f0;font-family:system-ui,-apple-system,sans-serif;height:100%;overflow:hidden}
-#app{display:flex;flex-direction:column;height:100dvh;width:100vw}
-#cam-wrap{position:relative;flex:1 1 auto;overflow:hidden;background:#000}
-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#hud{position:absolute;top:12px;left:12px;display:flex;gap:8px;pointer-events:none;z-index:5}
-.badge{background:rgba(0,0,0,0.65);border-radius:20px;padding:4px 11px;font-size:12px;font-weight:500;color:#88ffaa}
-.badge.warn{color:#ff8888}
-#bottom{flex:0 0 auto;background:#111;border-top:1px solid #1e1e1e;padding:12px 14px 22px;min-height:108px}
-#bottom-label{font-size:11px;font-weight:500;letter-spacing:.1em;color:#444;text-transform:uppercase;margin-bottom:10px}
-#reco-list{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:7px 15px;border-radius:22px;font-size:13px;font-weight:500}
-.chip.almond{background:#2b1a20;color:#ffb3c6;border:1px solid #5a2a3a}
-.chip.oval  {background:#1e1a2b;color:#c4a0ff;border:1px solid #3a2a5a}
-.chip.square{background:#2b1a1a;color:#ff7070;border:1px solid #5a2222}
-.chip.round {background:#2b241a;color:#ffcc88;border:1px solid #5a4422}
-.ph{font-size:14px;color:#444;padding:6px 0}
-
-#start-screen{position:absolute;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:20;padding:32px}
-#start-screen h2{font-size:22px;font-weight:500;color:#eee;text-align:center}
-#start-screen p{font-size:14px;color:#555;text-align:center;line-height:1.7;max-width:280px}
-#btn-start{background:#1e1e2e;border:2px solid #4a4a8a;color:#aaaaff;font-size:17px;font-weight:500;padding:16px 0;border-radius:32px;cursor:pointer;width:100%;max-width:280px}
-#btn-start:active{opacity:.7}
-#loading-screen{position:absolute;inset:0;background:#0a0a0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:15}
-#loading-screen p{font-size:14px;color:#666;text-align:center;padding:0 24px;line-height:1.7}
-.spinner{width:40px;height:40px;border:3px solid #1e1e1e;border-top-color:#aaaaff;border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#error-screen{position:absolute;inset:0;background:#0a0a0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:32px}
-#error-screen p{font-size:15px;color:#ff8888;text-align:center;line-height:1.6}
-#error-screen small{font-size:12px;color:#444;text-align:center;line-height:1.6}
-#btn-retry{background:#1e1010;border:1px solid #5a2222;color:#ff8888;font-size:15px;padding:12px 32px;border-radius:24px;cursor:pointer}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif}
+.container{position:relative;width:100%;max-width:720px;aspect-ratio:4/3;border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.6)}
+video,canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+video{transform:scaleX(-1)}
+canvas{transform:scaleX(-1);z-index:5}
+.hud{position:absolute;top:16px;left:16px;z-index:10;display:flex;gap:10px}
+.badge{background:rgba(0,0,0,0.6);color:#aaffaa;padding:6px 14px;border-radius:30px;font-size:13px;font-weight:500;backdrop-filter:blur(4px)}
+.badge.warn{color:#ffaa88}
+.info{position:absolute;bottom:20px;left:20px;right:20px;z-index:10;display:flex;justify-content:center}
+.info span{background:rgba(0,0,0,0.5);color:#ccc;padding:8px 20px;border-radius:40px;font-size:14px;backdrop-filter:blur(4px)}
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="cam-wrap">
-    <video id="video" playsinline autoplay muted></video>
-    <canvas id="output"></canvas>
-    <div id="hud">
-      <span class="badge" id="fps-badge">-- fps</span>
-      <span class="badge warn" id="hand-badge">хайж байна…</span>
-    </div>
-    <div id="start-screen">
-      <h2>💅 Nail Style Advisor</h2>
-      <p>Гараа камерт үзүүлэхэд хумсны хэлбэрийг таньж загварыг шууд дэлгэцэн дээр харуулна</p>
-      <button id="btn-start">▶&nbsp; Камер нээх</button>
-    </div>
-    <div id="loading-screen">
-      <div class="spinner"></div>
-      <p id="load-msg">Ачаалж байна…</p>
-    </div>
-    <div id="error-screen">
-      <p id="error-msg">Алдаа гарлаа</p>
-      <small id="error-detail"></small><br>
-      <button id="btn-retry">↺&nbsp; Дахин оролдох</button>
-    </div>
+<div class="container">
+  <video id="video" playsinline autoplay muted></video>
+  <canvas id="canvas"></canvas>
+  <div class="hud">
+    <span class="badge" id="fps">-- fps</span>
+    <span class="badge warn" id="status">ачаалж байна...</span>
   </div>
-  <div id="bottom">
-    <div id="bottom-label">Зөвлөсөн хумсны загвар</div>
-    <div id="reco-list"><span class="ph">Гараа камерт үзүүлнэ үү</span></div>
+  <div class="info">
+    <span id="nailInfo">💅 Гараа камерт үзүүлнэ үү</span>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
 <script>
-// ─── DOM ──────────────────────────────────────────────────────────────────────
-const video    = document.getElementById('video');
-const canvas   = document.getElementById('output');
-const ctx      = canvas.getContext('2d');
-const fpsBadge = document.getElementById('fps-badge');
-const handBadge= document.getElementById('hand-badge');
-const recoEl   = document.getElementById('reco-list');
-const startScr = document.getElementById('start-screen');
-const loadScr  = document.getElementById('loading-screen');
-const errScr   = document.getElementById('error-screen');
-const loadMsg  = document.getElementById('load-msg');
+const video   = document.getElementById('video');
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const fpsEl   = document.getElementById('fps');
+const statusEl= document.getElementById('status');
+const infoEl  = document.getElementById('nailInfo');
 
-// ─── ONE-EURO FILTER ─────────────────────────────────────────────────────────
-// Better than EMA: slow motion → strong smooth, fast motion → weak smooth
-class OneEuroFilter {
-  constructor(freq=30, mincutoff=1.0, beta=0.05, dcutoff=1.0){
-    this.freq=freq; this.mincutoff=mincutoff; this.beta=beta; this.dcutoff=dcutoff;
-    this.x=null; this.dx=0; this.lastTs=null;
-  }
-  alpha(cutoff){ const te=1/this.freq; const tau=1/(2*Math.PI*cutoff); return 1/(1+tau/te); }
-  filter(x, ts=null){
-    if(this.x===null){ this.x=x; this.lastTs=ts; return x; }
-    if(ts!==null && this.lastTs!==null){ this.freq=1000/(ts-this.lastTs+1e-6); }
-    this.lastTs=ts;
-    const dx=(x-this.x)*this.freq;
-    this.dx=this.alpha(this.dcutoff)*(dx-this.dx)+this.dx;
-    const cutoff=this.mincutoff+this.beta*Math.abs(this.dx);
-    this.x=this.alpha(cutoff)*(x-this.x)+this.x;
-    return this.x;
-  }
+// ── Kalman Filter ──────────────────────────────────────────
+class KalmanFilter {
+  constructor(q=0.001, r=0.01){ this.q=q; this.r=r; this.p=1; this.k=0; this.x=null; }
+  filter(v){ if(this.x===null){this.x=v;return v;} this.p+=this.q; this.k=this.p/(this.p+this.r); this.x+=this.k*(v-this.x); this.p=(1-this.k)*this.p; return this.x; }
+  reset(){ this.x=null; this.p=1; }
 }
 
-// Per-landmark x,y filters
-let filters = {};
-function getFilter(key){
-  if(!filters[key]) filters[key]=new OneEuroFilter(30, 1.5, 0.07, 1.0);
-  return filters[key];
-}
-function smoothLM(lm, ts){
-  return lm.map((p,i)=>({
-    x: getFilter(`${i}x`).filter(p.x, ts),
-    y: getFilter(`${i}y`).filter(p.y, ts),
-    z: p.z
-  }));
-}
-function resetFilters(){ filters={}; }
-
-// ─── MATH ────────────────────────────────────────────────────────────────────
-function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
-function palmW(lm){ return dist(lm[5],lm[17]); }
-
-// Simple EMA for classification (no need for one-euro here)
-let cls={};
-function cEma(k,v,a=0.15){ cls[k]=cls[k]===undefined?v:a*v+(1-a)*cls[k]; return cls[k]; }
-
-function fngW(lm,fi){
-  const pairs=[[5,6],[9,10],[13,14],[17,18]];
-  return dist(lm[pairs[fi][0]],lm[pairs[fi][1]])*1.8;
-}
-function classify(l,w){
-  if(l>0.95&&w<0.35)return'almond';
-  if(l<=0.95&&w>=0.35)return'square';
-  if(l>0.95&&w>=0.35)return'oval';
-  return'round';
-}
-
-// ─── NAIL THEMES ─────────────────────────────────────────────────────────────
-const THEMES={
-  almond:{ c0:'rgba(255,220,228,0.93)', c1:'rgba(238,145,168,0.90)', c2:'rgba(195,85,118,0.85)', hi:'rgba(255,248,250,0.50)', stroke:'rgba(210,95,130,0.95)' },
-  oval:  { c0:'rgba(225,200,255,0.93)', c1:'rgba(175,125,240,0.90)', c2:'rgba(120,62,198,0.85)',  hi:'rgba(248,240,255,0.50)', stroke:'rgba(145,80,215,0.95)' },
-  square:{ c0:'rgba(255,115,125,0.93)', c1:'rgba(222,40,65,0.92)',   c2:'rgba(165,8,30,0.87)',    hi:'rgba(255,185,190,0.48)', stroke:'rgba(178,12,38,0.97)' },
-  round: { c0:'rgba(255,228,205,0.93)', c1:'rgba(244,172,135,0.90)', c2:'rgba(208,118,82,0.85)',  hi:'rgba(255,248,238,0.50)', stroke:'rgba(218,128,92,0.95)' }
+// ── Per-finger filters ─────────────────────────────────────
+const filters = {
+  index:  { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
+  middle: { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
+  ring:   { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} },
+  pinky:  { tip:{x:new KalmanFilter(),y:new KalmanFilter()}, dip:{x:new KalmanFilter(),y:new KalmanFilter()} }
 };
 
-// ─── NAIL PATH (local coords: 0,0=tip, y+ toward cuticle) ───────────────────
-function nailPath(ctx, shape, w, h){
-  const hw=w/2;
-  ctx.beginPath();
-  if(shape==='almond'){
-    ctx.moveTo(0,0);
-    ctx.bezierCurveTo( hw*.5, h*.2,  hw, h*.44,  hw, h*.66);
-    ctx.bezierCurveTo( hw,    h*.89, hw*.5,  h,   0,  h);
-    ctx.bezierCurveTo(-hw*.5, h,    -hw,     h*.89, -hw, h*.66);
-    ctx.bezierCurveTo(-hw,    h*.44,-hw*.5, h*.2,   0,  0);
-  } else if(shape==='oval'){
-    ctx.ellipse(0, h*.52, hw, h*.53, 0, 0, 2*Math.PI);
-  } else if(shape==='square'){
-    const r=hw*.18;
-    ctx.moveTo(-hw+r, 0);
-    ctx.lineTo( hw-r, 0); ctx.quadraticCurveTo( hw, 0,  hw, r);
-    ctx.lineTo( hw, h-r); ctx.quadraticCurveTo( hw, h,  hw-r, h);
-    ctx.lineTo(-hw+r, h); ctx.quadraticCurveTo(-hw, h, -hw, h-r);
-    ctx.lineTo(-hw, r);   ctx.quadraticCurveTo(-hw, 0, -hw+r, 0);
-  } else { // round
-    ctx.ellipse(0, h*.47, hw*.90, h*.48, 0, 0, 2*Math.PI);
-  }
-  ctx.closePath();
+// ── Landmark indices ───────────────────────────────────────
+const FINGERS = {
+  index:  { tip:8,  dip:7  },
+  middle: { tip:12, dip:11 },
+  ring:   { tip:16, dip:15 },
+  pinky:  { tip:20, dip:19 }
+};
+
+// ── Math ───────────────────────────────────────────────────
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+function nailParams(tip, dip){
+  return {
+    x: tip.x + (dip.x-tip.x)*0.18,
+    y: tip.y + (dip.y-tip.y)*0.18,
+    length: dist(tip,dip)*0.72,
+    width:  dist(tip,dip)*0.72*0.58,
+    angle:  Math.atan2(dip.y-tip.y, dip.x-tip.x) + Math.PI/2
+  };
 }
 
-// ─── DRAW ONE NAIL ───────────────────────────────────────────────────────────
-// Uses PIP→TIP vector (longer baseline = more stable angle)
-const TIPS=[8,12,16,20], DIPS=[7,11,15,19], PIPS=[6,10,14,18];
-
-function drawNail(lm, fi, shape, W, H){
-  const tip=lm[TIPS[fi]], pip=lm[PIPS[fi]];
-  const tx=(1-tip.x)*W, ty=tip.y*H;
-  const px=(1-pip.x)*W, py=pip.y*H;
-
-  const fullLen=Math.hypot(tx-px, ty-py);
-  if(fullLen<8) return;
-
-  // angle from PIP→TIP vector (more stable than DIP→TIP)
-  const angle=Math.atan2(ty-py, tx-px);
-
-  // nail proportional to PIP-TIP length
-  const nH=fullLen*0.72;
-  const nW=fullLen*0.52;
-  const t=THEMES[shape];
+// ── Draw nail ──────────────────────────────────────────────
+function drawNail(p, W, H){
+  const cx=p.x*W, cy=p.y*H;
+  const avg=(W+H)/2;
+  const nW=p.width*avg, nL=p.length*avg;
 
   ctx.save();
-  ctx.translate(tx, ty);
-  ctx.rotate(angle);
+  ctx.translate(cx, cy);
+  ctx.rotate(p.angle);
 
-  // clip → fill → shine
-  ctx.save();
-  nailPath(ctx, shape, nW, nH);
-  ctx.clip();
+  ctx.shadowColor='rgba(0,0,0,0.45)';
+  ctx.shadowBlur=10;
+  ctx.shadowOffsetY=3;
 
-  // gradient fill
-  const g=ctx.createLinearGradient(-nW*.35, 0, nW*.55, nH);
-  g.addColorStop(0,   t.c0);
-  g.addColorStop(0.42,t.c1);
-  g.addColorStop(1,   t.c2);
+  // nail shape
+  ctx.beginPath();
+  ctx.ellipse(0, 0, nW/2, nL/2, 0, 0, 2*Math.PI);
+
+  // natural gradient
+  const g=ctx.createRadialGradient(-nW*.2,-nL*.1,nW*.1, nW*.1,nL*.15,nL*.7);
+  g.addColorStop(0,'#fdf4e8');
+  g.addColorStop(0.5,'#ecd9c2');
+  g.addColorStop(1,'#d4bda6');
   ctx.fillStyle=g;
-  ctx.fillRect(-nW, -4, nW*2, nH+8);
-
-  // specular shine (small ellipse, upper-left)
-  ctx.fillStyle=t.hi;
-  ctx.beginPath();
-  ctx.ellipse(-nW*.12, nH*.20, nW*.20, nH*.14, -0.25, 0, 2*Math.PI);
   ctx.fill();
 
-  // secondary softer shine
-  ctx.fillStyle='rgba(255,255,255,0.10)';
-  ctx.beginPath();
-  ctx.ellipse(nW*.05, nH*.52, nW*.30, nH*.22, 0.15, 0, 2*Math.PI);
-  ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
 
-  ctx.restore(); // release clip
-
-  // outline stroke
-  nailPath(ctx, shape, nW, nH);
-  ctx.strokeStyle=t.stroke;
+  ctx.strokeStyle='#b7a392';
   ctx.lineWidth=1.4;
   ctx.stroke();
+
+  // main shine
+  ctx.beginPath();
+  ctx.ellipse(-nW*.12,-nL*.15,nW*.15,nL*.18,0,0,2*Math.PI);
+  ctx.fillStyle='rgba(255,255,255,0.40)';
+  ctx.fill();
+
+  // soft secondary shine
+  ctx.beginPath();
+  ctx.ellipse(nW*.08,nL*.05,nW*.10,nL*.12,0.2,0,2*Math.PI);
+  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.fill();
+
+  // free edge
+  ctx.beginPath();
+  ctx.ellipse(0,nL*.3,nW*.4,nL*.12,0,0,2*Math.PI);
+  ctx.fillStyle='rgba(250,240,230,0.42)';
+  ctx.fill();
 
   ctx.restore();
 }
 
-// ─── DRAW OVERLAY ────────────────────────────────────────────────────────────
-function drawOverlay(lm, shapes){
-  const W=canvas.width, H=canvas.height;
-  ctx.clearRect(0,0,W,H);
-  shapes.forEach((shape,fi)=>drawNail(lm,fi,shape,W,H));
-}
+// ── Results callback ───────────────────────────────────────
+let fps=0, lastTime=performance.now(), frameCount=0;
 
-// ─── CLASSIFICATION ──────────────────────────────────────────────────────────
-const NAMED=[{tip:8,dip:7,name:'Index'},{tip:12,dip:11,name:'Middle'},{tip:16,dip:15,name:'Ring'},{tip:20,dip:19,name:'Pinky'}];
+function onResults(results){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-function getShapes(lm){
-  const pw=palmW(lm);
-  return NAMED.map(({tip,dip},fi)=>{
-    const nL=cEma('l'+fi, dist(lm[tip],lm[dip])/pw);
-    const nW=cEma('w'+fi, fngW(lm,fi)/pw);
-    return classify(nL,nW);
-  });
-}
-
-function renderRecos(shapes){
-  recoEl.innerHTML='';
-  NAMED.forEach(({name},fi)=>{
-    const shape=shapes[fi];
-    const chip=document.createElement('span');
-    chip.className='chip '+shape;
-    chip.textContent=name+': '+shape;
-    recoEl.appendChild(chip);
-  });
-}
-
-// ─── CANVAS RESIZE ───────────────────────────────────────────────────────────
-function resizeCanvas(){
-  canvas.width=canvas.parentElement.clientWidth;
-  canvas.height=canvas.parentElement.clientHeight;
-}
-window.addEventListener('resize',resizeCanvas);
-resizeCanvas();
-
-// ─── RAF LOOP ────────────────────────────────────────────────────────────────
-let handsModel=null, processing=false, lastTs=performance.now(), fps=0, rafId=null;
-const FE=0.15;
-
-function loop(){
-  rafId=requestAnimationFrame(loop);
-  if(!handsModel||processing||video.readyState<2) return;
-  const now=performance.now();
-  fps=FE*(1000/(now-lastTs))+(1-FE)*fps;
-  lastTs=now;
-  fpsBadge.textContent=Math.round(fps)+' fps';
-  processing=true;
-  handsModel.send({image:video}).catch(()=>{}).finally(()=>{processing=false});
-}
-
-// ─── ERROR / LOAD ─────────────────────────────────────────────────────────────
-function showError(msg,detail){
-  if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-  loadScr.style.display='none';
-  document.getElementById('error-msg').textContent=msg;
-  document.getElementById('error-detail').textContent=detail||'';
-  errScr.style.display='flex';
-}
-function loadScript(src){
-  return new Promise((res,rej)=>{
-    if(document.querySelector(`script[src="${src}"]`)){res();return;}
-    const s=document.createElement('script');
-    s.src=src; s.crossOrigin='anonymous';
-    s.onload=res; s.onerror=()=>rej(new Error('Татах амжилтгүй'));
-    document.head.appendChild(s);
-  });
-}
-
-// ─── MAIN ─────────────────────────────────────────────────────────────────────
-async function startApp(){
-  startScr.style.display='none';
-  errScr.style.display='none';
-  loadScr.style.display='flex';
-  loadMsg.textContent='Камерын эрх авж байна…';
-
-  let stream;
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
-      audio:false
+  if(!results.multiHandLandmarks?.length){
+    statusEl.textContent='хайж байна...';
+    statusEl.className='badge warn';
+    infoEl.textContent='💅 Гараа камерт үзүүлнэ үү';
+    // reset filters
+    Object.values(filters).forEach(f=>{
+      f.tip.x.reset();f.tip.y.reset();
+      f.dip.x.reset();f.dip.y.reset();
     });
-  }catch(e){
-    if(e.name==='NotAllowedError')
-      showError('Камерын эрх татгалзсан','Chrome → хаягийн мөрний 🔒 → Камер → Зөвшөөрөх → refresh');
-    else showError('Камер нээгдсэнгүй: '+e.name, e.message);
     return;
   }
+
+  statusEl.textContent='✓ илэрсэн';
+  statusEl.className='badge';
+
+  const lm=results.multiHandLandmarks[0];
+  let count=0;
+
+  Object.entries(FINGERS).forEach(([name,idx])=>{
+    const rt=lm[idx.tip], rd=lm[idx.dip];
+    if(!rt||!rd) return;
+    const f=filters[name];
+    const tip={x:f.tip.x.filter(rt.x), y:f.tip.y.filter(rt.y)};
+    const dip={x:f.dip.x.filter(rd.x), y:f.dip.y.filter(rd.y)};
+    drawNail(nailParams(tip,dip), canvas.width, canvas.height);
+    count++;
+  });
+
+  infoEl.textContent=`💅 ${count} хурууны хумс`;
+
+  // FPS
+  frameCount++;
+  const now=performance.now();
+  if(now-lastTime>=250){
+    fps=Math.round(frameCount*1000/(now-lastTime));
+    fpsEl.textContent=fps+' fps';
+    frameCount=0; lastTime=now;
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────
+async function start(){
+  const stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},
+    audio:false
+  }).catch(e=>{statusEl.textContent='❌ камерын алдаа';console.error(e);return null;});
+  if(!stream) return;
 
   video.srcObject=stream;
   await new Promise(res=>{video.onloadedmetadata=res;});
-  try{await video.play();}catch(e){}
+  await video.play();
+  canvas.width=video.videoWidth||1280;
+  canvas.height=video.videoHeight||720;
 
-  loadMsg.textContent='MediaPipe татаж байна… (5–15 сек)';
-  try{
-    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js');
-  }catch(e){
-    showError('Сүлжээний алдаа — интернэт холболтоо шалгана уу', e.message);
-    return;
-  }
+  statusEl.textContent='ачаалж байна...';
 
-  loadMsg.textContent='Загвар бэлдэж байна…';
-  const hands=new Hands({
-    locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
-  });
-  hands.setOptions({maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.72, minTrackingConfidence:0.65});
+  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+  hands.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.6,selfieMode:true});
+  hands.onResults(onResults);
+  await hands.initialize();
 
-  hands.onResults(results=>{
-    const raw=results.multiHandLandmarks?.[0]||null;
-    if(raw){
-      const now=performance.now();
-      const lm=smoothLM(raw, now);
-      const shapes=getShapes(lm);
-      handBadge.textContent='илэрсэн ✓';
-      handBadge.className='badge';
-      drawOverlay(lm, shapes);
-      renderRecos(shapes);
-    }else{
-      handBadge.textContent='хайж байна…';
-      handBadge.className='badge warn';
-      resetFilters(); cls={};
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      recoEl.innerHTML='<span class="ph">Гараа камерт үзүүлнэ үү</span>';
-    }
-  });
+  statusEl.textContent='хайж байна...';
 
-  try{await hands.send({image:video});}catch(e){showError('Загвар ачаалах амжилтгүй',e.message);return;}
-
-  handsModel=hands;
-  loadScr.style.display='none';
-  loop();
+  (function loop(){
+    if(video.readyState>=2) hands.send({image:video}).catch(()=>{});
+    requestAnimationFrame(loop);
+  })();
 }
 
-document.getElementById('btn-start').addEventListener('click', startApp);
-document.getElementById('btn-retry').addEventListener('click', ()=>{errScr.style.display='none';startApp();});
+start();
 </script>
 </body>
 </html>
