@@ -88,7 +88,7 @@ const geminiBadge = document.getElementById('geminiBadge');
 const suggestionsEl = document.getElementById('suggestions');
 
 // API тохиргоо
-let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
+let GEMINI_API_KEY = localStorage.getItem('AIzaSyDCdExkKVn6ZuriCQcE4E1owJ9zi9CZ1yA') || '';
 let GEMINI_PROMPT = localStorage.getItem('gemini_prompt') || 
   `Analyze this hand image carefully. Identify the shape of each fingernail and recommend the most flattering nail shape. Suggest 3 nail polish colors. Return ONLY valid JSON: {"fingers":{"index":"oval","middle":"almond","ring":"square","pinky":"round"},"colors":["#ff6b9d","#e84393","#c44569"],"reasoning":"Brief explanation"}`;
 
@@ -110,7 +110,7 @@ const ALPHA = 0.35;
 // ═══════════════════════════════════════════════════════════════════════════
 async function analyzeWithGemini() {
   if (!GEMINI_API_KEY) {
-    alert('Gemini API Key оруулна уу!\n\nAPI key авах: https://aistudio.google.com/app/apikey');
+    alert('AIzaSyDCdExkKVn6ZuriCQcE4E1owJ9zi9CZ1yA\n\nAPI key авах: https://aistudio.google.com/app/apikey');
     document.getElementById('settings').classList.add('show');
     return null;
   }
