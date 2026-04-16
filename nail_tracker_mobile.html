@@ -3,339 +3,799 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>💎 DeepAR Nail Try-On · Ажилладаг</title>
+<title>💅 Nail AI Master</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif}
-.app{width:100%;max-width:720px;height:100vh;max-height:900px;display:flex;flex-direction:column;background:#0a0a0a;overflow:hidden;margin:0 auto}
-.camera-container{position:relative;flex:1;background:#000;overflow:hidden}
-video,canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
-canvas{z-index:10}
-.hud{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;z-index:20;pointer-events:none;gap:8px;flex-wrap:wrap}
-.badge{background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);color:#fff;padding:6px 14px;border-radius:30px;font-size:13px;border:1px solid rgba(255,255,255,0.15)}
-.badge.ok{color:#88ffaa}
-.badge.deepar{background:linear-gradient(135deg,#1a1a3e,#2d1b4e);color:#a78bfa;border-color:#8b5cf6}
-.badge.error{background:rgba(200,50,50,0.7);color:#ffaaaa}
-.controls{position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:20;padding:0 16px;flex-wrap:wrap}
-.btn{background:rgba(30,30,50,0.95);backdrop-filter:blur(8px);color:#fff;border:1px solid #8b5cf6;padding:12px 18px;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;min-width:90px}
-.btn.active{background:#8b5cf6;color:#fff}
-.btn:active{transform:scale(0.96)}
-.btn:disabled{opacity:0.5;pointer-events:none}
-.panel{background:#121212;border-top:1px solid #222;padding:16px 16px 22px}
-.panel-title{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
-.effects{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-.effect-item{flex-shrink:0;width:65px;height:65px;border-radius:16px;background:#1a1a1a;border:2px solid #333;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.2s}
-.effect-item.active{border-color:#8b5cf6;background:#1a1a3e}
-.effect-item .icon{font-size:24px;margin-bottom:4px}
-.effect-item .name{font-size:10px;color:#aaa}
-.status-bar{position:absolute;bottom:100px;left:20px;right:20px;z-index:25;display:flex;justify-content:center}
-.status{background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);color:#a78bfa;padding:6px 16px;border-radius:30px;font-size:12px;border:1px solid #8b5cf6;text-align:center}
-.loading-screen{position:absolute;inset:0;background:#0a0a0a;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-.spinner{width:50px;height:50px;border:3px solid #1a1a1a;border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
-.loading-screen p{color:#888;font-size:14px;max-width:280px;text-align:center;line-height:1.5}
-.loading-screen .error-detail{color:#ff6b6b;font-size:12px;max-width:300px;word-break:break-all}
-.retry-btn{background:#8b5cf6;color:#fff;border:none;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:600;margin-top:10px;cursor:pointer}
-@keyframes spin{to{transform:rotate(360deg)}}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:#060608;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;color:#f0f0f0}
+#app{display:flex;flex-direction:column;height:100dvh}
+#wrap{position:relative;flex:1 1 auto;overflow:hidden;background:#000}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#capturedImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;transform:scaleX(-1);z-index:2}
+canvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+
+#hud{position:absolute;top:10px;left:10px;z-index:5;pointer-events:none;display:flex;flex-direction:column;gap:5px}
+.badge{display:inline-block;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);border-radius:16px;padding:4px 11px;font-size:11px;font-weight:500;border:1px solid rgba(255,255,255,0.07);color:#666}
+.badge.ok{color:#88ffaa;border-color:rgba(80,200,100,0.2)}
+.badge.warn{color:#ffaa44;border-color:rgba(255,160,60,0.2)}
+.badge.ai{color:#bb88ff;border-color:rgba(160,100,255,0.2)}
+.badge.det{color:#88ddff;border-color:rgba(80,180,255,0.15)}
+
+#controls{position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:5;padding:0 14px}
+.cbtn{background:rgba(8,6,18,0.92);backdrop-filter:blur(10px);border:1px solid #222230;color:#bbb;padding:12px 20px;border-radius:32px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.cbtn.primary{background:rgba(36,14,62,0.95);border-color:#5522aa;color:#bb88ff}
+.cbtn:active{transform:scale(0.93);opacity:.8}
+.cbtn:disabled{opacity:.32;pointer-events:none}
+
+#settingsBtn{position:absolute;top:10px;right:10px;z-index:6;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.72);border:1px solid #222;color:#555;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#settingsPanel{position:absolute;top:50px;right:10px;z-index:20;background:rgba(4,3,12,0.98);backdrop-filter:blur(14px);padding:15px;border-radius:14px;width:268px;display:none;border:1px solid #1a1630}
+#settingsPanel.show{display:block}
+#settingsPanel label{font-size:11px;color:#444;display:block;margin-top:10px;margin-bottom:3px}
+#settingsPanel label:first-child{margin-top:0}
+#settingsPanel input{width:100%;background:#080614;border:1px solid #1a1630;color:#ccc;padding:8px 10px;border-radius:8px;font-size:13px}
+.sbtn{margin-top:10px;width:100%;padding:9px;background:#100c2a;border:1px solid #2a1888;color:#8866ff;border-radius:9px;cursor:pointer;font-size:12px;text-align:center}
+.sbtn:active{opacity:.7}
+
+#panel{flex:0 0 auto;background:#07070e;border-top:1px solid #101018;overflow-y:auto;max-height:50vh;min-height:100px}
+#panelInner{padding:12px 14px 16px}
+
+.ph{font-size:13px;color:#222;text-align:center;padding:22px;line-height:1.7}
+
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;padding:20px;gap:10px}
+.spinner{width:28px;height:28px;border:2.5px solid #100c22;border-top-color:#7733dd;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading p{font-size:12px;color:#444;text-align:center;line-height:1.6}
+.step-list{display:flex;flex-direction:column;gap:4px;width:100%;max-width:240px}
+.step-item{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #1a1630;color:#333;transition:all .3s}
+.step-item.active{color:#9966ff;border-color:#3322aa;background:#0a0820}
+.step-item.done{color:#44aa66;border-color:#1a3322;background:#060e08}
+
+/* Result */
+.layer-header{font-size:9px;letter-spacing:.12em;color:#2a2440;text-transform:uppercase;margin:10px 0 6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.layer-header::after{content:'';flex:1;height:1px;background:#121220}
+
+.det-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:2px}
+.det-card{background:#08060e;border:1px solid #12102a;border-radius:9px;padding:8px 10px;text-align:center}
+.det-card .dl{font-size:9px;letter-spacing:.08em;color:#2a2440;text-transform:uppercase;margin-bottom:3px}
+.det-card .dv{font-size:12px;font-weight:600;color:#7755cc}
+.det-card .dc{font-size:9px;color:#2a2040;margin-top:2px}
+
+.conf-bar-wrap{display:flex;align-items:center;gap:8px;background:#07060e;border:1px solid #12102a;border-radius:8px;padding:8px 12px;margin-bottom:2px}
+.conf-bar-bg{flex:1;height:5px;background:#121220;border-radius:3px;overflow:hidden}
+.conf-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.conf-label{font-size:11px;font-weight:600;min-width:36px;text-align:right}
+.conf-warn{font-size:10px;color:#886633;background:#1a1208;border:1px solid #332210;border-radius:6px;padding:5px 10px;margin-bottom:6px;line-height:1.5}
+
+.shape-card{background:#080a1e;border:1px solid #141840;border-radius:11px;padding:11px 14px;margin-bottom:4px;display:flex;align-items:center;gap:12px}
+.shape-icon{font-size:24px;flex-shrink:0}
+.shape-info h3{font-size:15px;font-weight:600;color:#7788ff;margin-bottom:2px}
+.shape-info p{font-size:11px;color:#3a4060;line-height:1.5}
+.shape-avoid{font-size:10px;color:#3a2020;margin-top:2px}
+
+.colors-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px}
+.color-card{display:flex;align-items:center;gap:8px;background:#090909;border:1px solid #141414;border-radius:9px;padding:7px 10px;flex:1;min-width:105px}
+.cswatch{width:28px;height:28px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.08)}
+.cname{font-size:11px;color:#bbb;font-weight:500}
+.cwhy{font-size:10px;color:#334;margin-top:1px;line-height:1.4}
+
+.reasoning{background:#060410;border:1px solid #100c28;border-radius:10px;padding:10px 12px;margin-bottom:4px}
+.reasoning p{font-size:12px;color:#665577;line-height:1.7}
+
+.critic-badge{display:inline-block;font-size:10px;padding:3px 9px;border-radius:10px;margin-bottom:6px}
+.critic-badge.pass{background:#081208;border:1px solid #1a3a1a;color:#448844}
+.critic-badge.fixed{background:#1a100a;border:1px solid #3a2a08;color:#aa8833}
+.critic-fixes{font-size:11px;color:#554422;background:#0e0a04;border:1px solid #2a1a04;border-radius:8px;padding:8px 10px;margin-bottom:6px;line-height:1.6}
+
+.action-row{display:flex;gap:6px;margin-top:8px}
+.abtn{flex:1;padding:8px;background:#070710;border:1px solid #141430;color:#444;border-radius:8px;cursor:pointer;font-size:11px;text-align:center}
+.abtn:active{opacity:.7}
+
+.offline-box{background:#120c04;border:1px solid #3a2208;border-radius:10px;padding:14px;text-align:center}
+.offline-box h3{color:#bb7722;font-size:14px;margin-bottom:6px}
+.offline-box p{font-size:12px;color:#664;line-height:1.6}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="camera-container">
+<div id="app">
+  <div id="wrap">
     <video id="video" playsinline autoplay muted></video>
+    <img id="capturedImg" alt="">
     <canvas id="canvas"></canvas>
-    
-    <div class="loading-screen" id="loadingScreen">
-      <div class="spinner"></div>
-      <p id="loadingText">SDK ачаалж байна...</p>
-      <div id="errorDetail" class="error-detail"></div>
-      <button class="retry-btn" id="retryBtn" style="display:none">↻ Дахин оролдох</button>
+    <div id="hud">
+      <span class="badge" id="statusBadge">Камер эхлүүлж байна…</span>
+      <span class="badge det" id="layerBadge">Analyzer бэлэн</span>
     </div>
-    
-    <div class="hud">
-      <span class="badge" id="fpsBadge">-- fps</span>
-      <span class="badge deepar" id="deeparBadge">💅 DeepAR</span>
+    <button id="settingsBtn">⚙</button>
+    <div id="settingsPanel">
+      <label>Gemini API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="AIza...">
+      <div class="sbtn" id="saveBtn">Хадгалах</div>
     </div>
-    
-    <div class="status-bar">
-      <div class="status" id="statusText">Эхлүүлж байна...</div>
-    </div>
-    
-    <div class="controls">
-      <button class="btn active" data-effect="none" disabled>🚫 Үндсэн</button>
-      <button class="btn" data-effect="red" disabled>❤️ Улаан</button>
-      <button class="btn" data-effect="pink" disabled>💗 Ягаан</button>
-      <button class="btn" data-effect="french" disabled>🤍 Франц</button>
-      <button class="btn" data-effect="glitter" disabled>✨ Гялтганасан</button>
+    <div id="controls">
+      <button class="cbtn" id="captureBtn">📸 Зураг авах</button>
+      <button class="cbtn primary" id="analyzeBtn">✨ Шинжилгээ</button>
+      <button class="cbtn" id="retakeBtn" style="display:none">↩ Дахин</button>
     </div>
   </div>
-  
-  <div class="panel">
-    <div class="panel-title">💅 ХУМСНЫ ЗАГВАРУУД</div>
-    <div class="effects" id="effectsList">
-      <div class="effect-item active" data-effect="none">
-        <span class="icon">💅</span>
-        <span class="name">Байгалийн</span>
-      </div>
-    </div>
-  </div>
+  <div id="panel"><div id="panelInner">
+    <p class="ph">Гараа камерт харуулаад 📸 аваарай</p>
+  </div></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// DEEPAR NAIL TRY-ON · ЗАСВАРЛАСАН CDN + АЛДАА ШАЛГАГЧ
-// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  NAIL AI MASTER — 6-LAYER PIPELINE
+//
+//  Image → Analyzer → Rule Engine → Master AI
+//        → Validator → Critic AI → Final Output
+//
+//  Layer 1: Deterministic pixel analysis (code, not AI)
+//  Layer 2: Structured rule base (JSON, program-verifiable)
+//  Layer 3: Master AI (gets FACTS, generates design)
+//  Layer 4: Rule Engine validator (checks every output field)
+//  Layer 5: Critic AI (fixes violations, only when needed)
+//  Layer 6: Confidence scoring (warns if uncertain)
+// ═══════════════════════════════════════════════════════════════════
 
-(function() {
-  "use strict";
+const MODEL   = 'gemini-2.0-flash';
+const TIMEOUT = 15000;
 
-  // Төхөөрөмж илрүүлэх
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  
-  // License key-үүд
-  const LICENSE_KEY = isIOS 
-    ? '19476c652b64ee0ed688bb8ab36ff064340ea362978592ceddb2da0d6ba7ae7ba69327e92bbb894d'
-    : 'e64e81e6bc6b69f969a5f3d7fa2812765bbf1e32084efb2723c45c4da36ea07b69f985105e6413df';
+let API_KEY     = localStorage.getItem('nail_key') || '';
+let capturedB64 = null;
+let capturedCanvas = null;
 
-  console.log('📱 Төхөөрөмж:', isIOS ? 'iOS' : 'Android');
+const video       = document.getElementById('video');
+const canvas      = document.getElementById('canvas');
+const ctx         = canvas.getContext('2d');
+const capturedImg = document.getElementById('capturedImg');
+const statusBadge = document.getElementById('statusBadge');
+const layerBadge  = document.getElementById('layerBadge');
+const panelInner  = document.getElementById('panelInner');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const captureBtn  = document.getElementById('captureBtn');
+const retakeBtn   = document.getElementById('retakeBtn');
 
-  // DOM элементүүд
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const loadingScreen = document.getElementById('loadingScreen');
-  const loadingText = document.getElementById('loadingText');
-  const errorDetail = document.getElementById('errorDetail');
-  const retryBtn = document.getElementById('retryBtn');
-  const statusText = document.getElementById('statusText');
-  const deeparBadge = document.getElementById('deeparBadge');
-  const fpsBadge = document.getElementById('fpsBadge');
+document.getElementById('apiKeyInput').value = API_KEY;
+document.getElementById('settingsBtn').addEventListener('click', () =>
+  document.getElementById('settingsPanel').classList.toggle('show'));
+document.getElementById('saveBtn').addEventListener('click', () => {
+  API_KEY = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('nail_key', API_KEY);
+  document.getElementById('settingsPanel').classList.remove('show');
+  statusBadge.textContent = 'API хадгалагдлаа ✓';
+  statusBadge.className = 'badge ok';
+});
 
-  let deepAR = null;
-  let fps = 0, frameCount = 0, lastTime = performance.now();
+// ═══════════════════════════════════════════════════════════════════
+// LAYER 1 — DETERMINISTIC IMAGE ANALYZER
+// AI биш — зургийн пикселийг шууд код уншина
+// Энэ хэсгийн үр дүн нь "баримт" — AI дарж чадахгүй
+// ═══════════════════════════════════════════════════════════════════
+class ImageAnalyzer {
+  analyze(imageCanvas) {
+    const W = imageCanvas.width;
+    const H = imageCanvas.height;
+    const offCtx = imageCanvas.getContext('2d');
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // DEEPAR SDK АЧААЛАХ (ОЛОН CDN ТУРШИХ)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const CDN_URLS = [
-    'https://cdn.deepar.ai/deepar/deepar.js',
-    'https://unpkg.com/deepar@5.8.0/dist/deepar.js',
-    'https://cdn.jsdelivr.net/npm/deepar@5.8.0/dist/deepar.js'
+    // Center-upper region = back of hand (most representative)
+    const sx = Math.floor(W * 0.25);
+    const sy = Math.floor(H * 0.15);
+    const sw = Math.floor(W * 0.50);
+    const sh = Math.floor(H * 0.55);
+    const pixels = offCtx.getImageData(sx, sy, sw, sh);
+    const d = pixels.data;
+
+    // ── Calculate average RGB (skip near-black and near-white pixels) ──
+    let r=0, g=0, b=0, cnt=0;
+    let rArr=[], gArr=[], bArr=[];
+    for (let i=0; i<d.length; i+=4) {
+      const pr=d[i], pg=d[i+1], pb=d[i+2];
+      const lum = 0.299*pr + 0.587*pg + 0.114*pb;
+      if (lum < 20 || lum > 240) continue; // skip shadows & blown-out highlights
+      r+=pr; g+=pg; b+=pb; cnt++;
+      rArr.push(pr); gArr.push(pg); bArr.push(pb);
+    }
+    if (cnt < 100) return this._fallback();
+    r/=cnt; g/=cnt; b/=cnt;
+
+    // ── Skin depth from luminance ──
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    let depth;
+    if      (lum > 185) depth = 'light';
+    else if (lum > 120) depth = 'medium';
+    else                depth = 'dark';
+
+    // ── Undertone from RGB ratios ──
+    // Warm: red channel dominates, yellow cast (high R, mid G, lower B)
+    // Cool: blue relatively high, pink cast
+    // Olive: green channel elevated, yellow-green cast
+    const warmScore   = (r - b) / 255;
+    const oliveScore  = (g - (r + b) / 2) / 255;
+    const coolScore   = (b - r + 25) / 255;
+    const redDom      = r / (g + b + 1);
+
+    let undertone, undertoneConfidence;
+    if (oliveScore > 0.04 && g > r * 0.92) {
+      undertone = 'olive'; undertoneConfidence = Math.min(1, oliveScore * 8);
+    } else if (warmScore > 0.09 && redDom > 0.52) {
+      undertone = 'warm'; undertoneConfidence = Math.min(1, warmScore * 5);
+    } else if (coolScore > 0.04) {
+      undertone = 'cool'; undertoneConfidence = Math.min(1, coolScore * 8);
+    } else {
+      undertone = 'neutral'; undertoneConfidence = 0.55;
+    }
+
+    // ── Color variance = skin texture indicator ──
+    const variance = rArr.reduce((s,v)=>(s+(v-r)**2),0)/rArr.length;
+    const textureScore = Math.min(1, variance / 800); // high variance = more texture
+
+    // ── Overall analyzer confidence ──
+    const analyzerConfidence = (
+      undertoneConfidence * 0.5 +
+      (1 - textureScore * 0.3) * 0.3 +
+      (cnt > 5000 ? 0.2 : cnt/5000*0.2)
+    );
+
+    return {
+      avgR: Math.round(r), avgG: Math.round(g), avgB: Math.round(b),
+      depth,
+      undertone,
+      undertoneConfidence: Math.round(undertoneConfidence * 100) / 100,
+      textureScore: Math.round(textureScore * 100) / 100,
+      luminance: Math.round(lum),
+      analyzerConfidence: Math.round(analyzerConfidence * 100) / 100,
+      pixelCount: cnt
+    };
+  }
+
+  _fallback() {
+    return {
+      avgR:180, avgG:140, avgB:120, depth:'medium', undertone:'neutral',
+      undertoneConfidence:0.3, textureScore:0.3, luminance:150,
+      analyzerConfidence:0.2, pixelCount:0
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LAYER 2 — STRUCTURED RULE BASE (JSON, program-verifiable)
+// Энэ мэдлэг нь string биш — code-оор шалгах боломжтой
+// ═══════════════════════════════════════════════════════════════════
+const RULES = {
+  undertone: {
+    warm: {
+      approved_hex_ranges: { hue_min:0, hue_max:60 },     // red-orange-yellow range
+      forbidden_keywords: ['blue','lavender','lilac','grey','silver','cool-pink','icy'],
+      preferred_families: ['coral','peach','terracotta','gold','caramel','warm-red','rust','nude-beige'],
+      approved_hex_examples: ['#C4622D','#E8956D','#D4AF37','#8B1A1A','#CC8844','#FFCBA4'],
+      note: 'Дулаан undertone — хөх/нил ягаан өнгө хиртүүлдэг'
+    },
+    cool: {
+      approved_hex_ranges: { hue_min:180, hue_max:360 },  // blue-purple-pink range
+      forbidden_keywords: ['orange','terracotta','gold','yellow','warm','copper','bronze'],
+      preferred_families: ['berry','mauve','plum','icy-pink','lavender','navy','wine','rose'],
+      approved_hex_examples: ['#C8A8B8','#9B8FA0','#4A3040','#8B3A62','#CC6688','#E8D5D5'],
+      note: 'Хүйтэн undertone — халуун шаргал/улбар шар өнгө зөрчилддөг'
+    },
+    olive: {
+      approved_hex_ranges: { hue_min:0, hue_max:50 },
+      forbidden_keywords: ['icy','pale','pastel','silver','cool-grey'],
+      preferred_families: ['burgundy','forest-green','copper','burnt-sienna','earthy-brown'],
+      approved_hex_examples: ['#800000','#556B2F','#8B4513','#8B7355','#6B3A2A'],
+      note: 'Олив undertone — бор шаргал дэвсгэр дээр цайвар өнгө нүүр царайгүй харагдана'
+    },
+    neutral: {
+      approved_hex_ranges: { hue_min:0, hue_max:360 },
+      forbidden_keywords: [],
+      preferred_families: ['rose-gold','dusty-rose','greige','classic-red','nude'],
+      approved_hex_examples: ['#D4A5A5','#C490A0','#B8A9C4','#CC3333','#E8C5A5'],
+      note: 'Дунд undertone — ихэнх өнгөтэй нийцэнэ'
+    }
+  },
+  depth: {
+    light:  { saturation_preference: 'low-medium', avoid: 'very-dark-only' },
+    medium: { saturation_preference: 'medium',      avoid: 'none' },
+    dark:   { saturation_preference: 'high',         avoid: 'very-light-only' }
+  },
+  shape_rules: {
+    long_narrow:   { primary:'almond',   secondary:'stiletto', avoid:'square' },
+    long_wide:     { primary:'coffin',   secondary:'oval',     avoid:'stiletto' },
+    medium_medium: { primary:'oval',     secondary:'round',    avoid:'coffin' },
+    short_narrow:  { primary:'round',    secondary:'oval',     avoid:'stiletto' },
+    short_wide:    { primary:'squoval',  secondary:'square',   avoid:'almond' },
+    mature:        { primary:'oval',     secondary:'round',    avoid:'stiletto' },
+    young_long:    { primary:'almond',   secondary:'stiletto', avoid:'none' }
+  },
+  confidence_thresholds: {
+    high:   { min: 0.75, label: 'Өндөр итгэлтэй',   color: '#44aa66' },
+    medium: { min: 0.50, label: 'Дунд итгэлтэй',    color: '#aaaa44' },
+    low:    { min: 0.00, label: 'Итгэл бага — зурган чанар шалгана уу', color: '#aa4444' }
+  }
+};
+
+// ── Hex to HSL for validation ──
+function hexToHsl(hex) {
+  let r=parseInt(hex.slice(1,3),16)/255;
+  let g=parseInt(hex.slice(3,5),16)/255;
+  let b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0, s=0, l=(max+min)/2;
+  if (max!==min) {
+    const d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;default:h=((r-g)/d+4)/6;}
+  }
+  return {h:h*360, s:s*100, l:l*100};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LAYER 4 — RULE ENGINE VALIDATOR
+// AI-ийн гаралтыг deterministic data-тай харьцуулна
+// Хэдэн ч удаа дуудаж болно, тогтвортой
+// ═══════════════════════════════════════════════════════════════════
+class RuleEngine {
+  validate(recommendation, analyzedData) {
+    const issues = [];
+    const undertoneRule = RULES.undertone[analyzedData.undertone];
+    if (!undertoneRule) return { valid: true, issues: [], confidence: 0.7 };
+
+    const colors = recommendation.primary_colors || [];
+
+    // Check each color
+    colors.forEach((c, i) => {
+      const name = (c.name || '').toLowerCase();
+      const hex  = c.hex || '#888888';
+
+      // Forbidden keyword check
+      const hasForbidden = undertoneRule.forbidden_keywords.some(kw =>
+        name.includes(kw) || (c.why||'').toLowerCase().includes(kw));
+      if (hasForbidden) {
+        issues.push({
+          severity: 'high',
+          field: `colors[${i}]`,
+          hex,
+          message: `"${c.name}" нь ${analyzedData.undertone} undertone-тэй үл нийцэх өнгийн нэр агуулж байна`,
+          rule: undertoneRule.note
+        });
+      }
+
+      // HSL hue check for warm/cool
+      if (hex.startsWith('#') && hex.length === 7) {
+        try {
+          const hsl = hexToHsl(hex);
+          if (analyzedData.undertone === 'warm' && hsl.h > 180 && hsl.h < 300 && hsl.s > 30) {
+            issues.push({
+              severity: 'medium',
+              field: `colors[${i}]`,
+              hex,
+              message: `${c.name} (hue:${Math.round(hsl.h)}°) нь дулаан undertone-д хүйтэн хэт давамгайлна`,
+              rule: undertoneRule.note
+            });
+          }
+          if (analyzedData.undertone === 'cool' && ((hsl.h < 50 || hsl.h > 330)) && hsl.s > 40) {
+            issues.push({
+              severity: 'medium',
+              field: `colors[${i}]`,
+              hex,
+              message: `${c.name} (hue:${Math.round(hsl.h)}°) нь хүйтэн undertone-д дулаан хэт давамгайлна`,
+              rule: undertoneRule.note
+            });
+          }
+        } catch(e) {}
+      }
+    });
+
+    // Check shape consistency
+    const shape = (recommendation.primary_shape || '').toLowerCase();
+    if (analyzedData.estimatedAge > 50 && shape === 'stiletto') {
+      issues.push({
+        severity: 'medium',
+        field: 'primary_shape',
+        message: `Stiletto нь ${analyzedData.estimatedAge} насны гарт практик бус бөгөөд судасны харагдалтыг нэмэгдүүлнэ`,
+        rule: 'Насанд хүрсэн гарт зуйван/бөөрөнхий хэлбэр илүү зохимжтой'
+      });
+    }
+
+    // Confidence calculation
+    const highCount   = issues.filter(i=>i.severity==='high').length;
+    const mediumCount = issues.filter(i=>i.severity==='medium').length;
+    const validationScore = Math.max(0, 1 - highCount*0.35 - mediumCount*0.15);
+
+    return {
+      valid: issues.length === 0,
+      issues,
+      validationScore,
+      undertoneRule
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFIDENCE SCORER
+// ═══════════════════════════════════════════════════════════════════
+function calcFinalConfidence(analyzedData, validation) {
+  const analyzerW    = analyzedData.analyzerConfidence * 0.35;
+  const validationW  = validation.validationScore * 0.45;
+  const pixelQualW   = Math.min(1, analyzedData.pixelCount / 8000) * 0.20;
+  const total = analyzerW + validationW + pixelQualW;
+  return Math.round(total * 100) / 100;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LAYER 3 — MASTER AI
+// Зөвхөн recommendation үүрэгтэй
+// Deterministic data нь "баримт" болж өгөгдөнө
+// ═══════════════════════════════════════════════════════════════════
+async function callMasterAI(analyzedData, imageB64, isRetry = false) {
+  const undertoneRule = RULES.undertone[analyzedData.undertone] || {};
+
+  const systemPrompt = `You are a nail design specialist. You receive VERIFIED BIOLOGICAL DATA measured from the image by computer analysis — do NOT re-estimate these values, accept them as facts.
+
+VERIFIED BIOLOGICAL DATA (computer-measured, authoritative):
+- Skin depth: ${analyzedData.depth} (luminance: ${analyzedData.luminance}/255)
+- Undertone: ${analyzedData.undertone} (confidence: ${Math.round(analyzedData.undertoneConfidence*100)}%)
+- Average skin RGB: rgb(${analyzedData.avgR}, ${analyzedData.avgG}, ${analyzedData.avgB})
+- Texture score: ${analyzedData.textureScore} (0=smooth, 1=textured/mature)
+
+UNDERTONE RULES (these are constraints, not suggestions):
+- Preferred color families: ${(undertoneRule.preferred_families||[]).join(', ')}
+- Approved hex examples: ${(undertoneRule.approved_hex_examples||[]).join(', ')}
+- FORBIDDEN keywords in color names: ${(undertoneRule.forbidden_keywords||[]).join(', ')}
+- Rule: ${undertoneRule.note||''}
+
+${isRetry ? 'IMPORTANT: Previous response had rule violations. Strictly comply this time.' : ''}
+
+Your task: Based on the image AND these verified measurements, recommend nail design.
+Use Mongolian ONLY for the "reasoning" field.
+Return ONLY valid JSON:
+{
+  "estimated_age": 35,
+  "primary_shape": "oval",
+  "secondary_shape": "round",
+  "length_suggestion": "medium (5-7mm)",
+  "avoid": "stiletto",
+  "primary_colors": [
+    {"hex":"#C4622D","name":"Burnt Terracotta","why":"warm hue matches ${analyzedData.undertone} undertone perfectly"},
+    {"hex":"#D4AF37","name":"Warm Gold","why":"..."},
+    {"hex":"#8B4513","name":"Saddle Brown","why":"..."}
+  ],
+  "reasoning": "Монгол хэлээр тайлбарлана...",
+  "care_tip": "specific care advice"
+}`;
+
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT);
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: systemPrompt },
+          { inline_data: { mime_type: 'image/jpeg', data: imageB64 } }
+        ]}],
+        generationConfig: { temperature: isRetry ? 0.2 : 0.4, maxOutputTokens: 900, responseMimeType: 'application/json' }
+      })
+    }
+  );
+  clearTimeout(tid);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('Хариу хоосон');
+  return JSON.parse((raw.match(/\{[\s\S]*\}/) || [raw])[0]);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LAYER 5 — CRITIC AI
+// Master AI алдаа гаргасан үед л дуудна — зардал хэмнэнэ
+// Зөвхөн "засвар" хийдэг, бүгдийг дахин generate хийдэггүй
+// ═══════════════════════════════════════════════════════════════════
+async function callCriticAI(masterResult, validation, analyzedData, imageB64) {
+  const issueText = validation.issues.map(i =>
+    `- ${i.field}: ${i.message} (Rule: ${i.rule||''})`).join('\n');
+
+  const undertoneRule = RULES.undertone[analyzedData.undertone] || {};
+  const approvedExamples = (undertoneRule.approved_hex_examples || []).join(', ');
+
+  const criticPrompt = `You are a nail color validator. The previous recommendation had these rule violations:
+
+${issueText}
+
+VERIFIED FACTS:
+- Undertone: ${analyzedData.undertone}
+- Approved hex examples for this undertone: ${approvedExamples}
+- Forbidden keywords: ${(undertoneRule.forbidden_keywords||[]).join(', ')}
+
+Fix ONLY the violating colors. Keep shape and other fields unchanged.
+Return the corrected full JSON with the same structure, changing only colors that violated rules.
+Use Mongolian only for reasoning field.
+Append to reasoning: " [Critic засварласан]"`;
+
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT);
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: criticPrompt },
+          { text: 'Previous result: ' + JSON.stringify(masterResult) },
+          { inline_data: { mime_type: 'image/jpeg', data: imageB64 } }
+        ]}],
+        generationConfig: { temperature: 0.15, maxOutputTokens: 700, responseMimeType: 'application/json' }
+      })
+    }
+  );
+  clearTimeout(tid);
+  const data = await res.json();
+  if (data.error) throw new Error('Critic алдаа: ' + data.error.message);
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) return masterResult;
+  try {
+    return JSON.parse((raw.match(/\{[\s\S]*\}/) || [raw])[0]);
+  } catch(e) { return masterResult; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN PIPELINE ORCHESTRATOR
+// ═══════════════════════════════════════════════════════════════════
+const analyzer    = new ImageAnalyzer();
+const ruleEngine  = new RuleEngine();
+
+analyzeBtn.addEventListener('click', async () => {
+  if (!capturedB64 || !capturedCanvas) {
+    panelInner.innerHTML = '<p class="ph" style="color:#aa6622">⚠️ Эхлээд 📸 зураг аваарай</p>';
+    return;
+  }
+  if (!API_KEY) {
+    document.getElementById('settingsPanel').classList.add('show');
+    panelInner.innerHTML = '<p class="ph" style="color:#8866cc">⚙️ API key оруулна уу</p>';
+    return;
+  }
+  if (!navigator.onLine) {
+    panelInner.innerHTML = `<div class="offline-box"><h3>📡 Интернет байхгүй</h3><p>Wi-Fi эсвэл дата асаагаад дахин оролдоорой</p></div>`;
+    return;
+  }
+
+  analyzeBtn.disabled = true;
+
+  // ── Step indicators ──
+  const steps = [
+    { id:'s1', label:'Layer 1 · Pixel analyzer' },
+    { id:'s2', label:'Layer 2 · Rule engine' },
+    { id:'s3', label:'Layer 3 · Master AI' },
+    { id:'s4', label:'Layer 4 · Validator' },
+    { id:'s5', label:'Layer 5 · Critic AI (шаардлагатай үед)' },
+    { id:'s6', label:'Layer 6 · Confidence score' }
   ];
+  panelInner.innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="step-list">${steps.map(s=>`<div class="step-item" id="${s.id}">${s.label}</div>`).join('')}</div>
+    </div>`;
 
-  let currentCDNIndex = 0;
-
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      // Өмнөх script-үүдийг устгах
-      document.querySelectorAll('script[data-deepar]').forEach(s => s.remove());
-      
-      const script = document.createElement('script');
-      script.setAttribute('data-deepar', 'true');
-      script.src = src;
-      script.onload = () => {
-        console.log('✅ CDN ачааллаа:', src);
-        resolve();
-      };
-      script.onerror = () => {
-        console.warn('❌ CDN ачаалсангүй:', src);
-        reject(new Error(`CDN ачаалсангүй: ${src}`));
-      };
-      document.head.appendChild(script);
-    });
-  }
-
-  async function loadDeepARSDK() {
-    for (let i = 0; i < CDN_URLS.length; i++) {
-      try {
-        loadingText.textContent = `SDK ачаалж байна... (CDN ${i + 1}/${CDN_URLS.length})`;
-        await loadScript(CDN_URLS[i]);
-        
-        // SDK бэлэн болтол хүлээх
-        await waitForDeepARObject();
-        return true;
-      } catch (error) {
-        console.error('CDN алдаа:', error.message);
-        if (i === CDN_URLS.length - 1) {
-          throw new Error('Бүх CDN ачаалсангүй. Интернет холболтоо шалгана уу.');
-        }
-      }
-    }
-    return false;
-  }
-
-  function waitForDeepARObject() {
-    return new Promise((resolve, reject) => {
-      if (typeof deepar !== 'undefined') {
-        console.log('✅ deepar объект олдлоо');
-        resolve();
-        return;
-      }
-      
-      let attempts = 0;
-      const maxAttempts = 30;
-      const interval = setInterval(() => {
-        attempts++;
-        
-        if (typeof deepar !== 'undefined') {
-          clearInterval(interval);
-          console.log('✅ deepar объект олдлоо');
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          reject(new Error('deepar объект үүсээгүй. SDK-ийн хувилбар тохирохгүй байж магадгүй.'));
-        }
-      }, 200);
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // DEEPAR ЭХЛҮҮЛЭХ
-  // ═══════════════════════════════════════════════════════════════════════════
-  async function initDeepAR() {
-    try {
-      // SDK ачаалах
-      await loadDeepARSDK();
-      
-      loadingText.textContent = 'Камер нээж байна...';
-      
-      // Камерын тохиргоо
-      const constraints = {
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-      
-      // Эхлээд камер нээх
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
-      await video.play();
-      
-      loadingText.textContent = 'DeepAR эхлүүлж байна...';
-      
-      // DeepAR эхлүүлэх
-      deepAR = await deepar.initialize({
-        licenseKey: LICENSE_KEY,
-        canvas: canvas,
-        video: video
-      });
-      
-      console.log('✅ DeepAR эхэллээ');
-      
-      // Анхдагч эффект
-      await deepAR.switchEffect(null);
-      
-      // UI шинэчлэх
-      statusText.textContent = '✓ Бэлэн · Гараа харуулна уу';
-      deeparBadge.textContent = '💅 DeepAR ✓';
-      deeparBadge.classList.add('ok');
-      
-      // Товчнууд идэвхжүүлэх
-      document.querySelectorAll('.btn').forEach(btn => btn.disabled = false);
-      
-      // Ачаалах дэлгэц нуух
-      loadingScreen.style.opacity = '0';
-      setTimeout(() => {
-        loadingScreen.style.display = 'none';
-      }, 500);
-      
-      // FPS хэмжих
-      function measureFPS() {
-        frameCount++;
-        const now = performance.now();
-        if (now - lastTime >= 200) {
-          fps = Math.round(frameCount * 1000 / (now - lastTime));
-          fpsBadge.textContent = fps + ' fps';
-          frameCount = 0;
-          lastTime = now;
-        }
-        requestAnimationFrame(measureFPS);
-      }
-      measureFPS();
-      
-    } catch (error) {
-      console.error('❌ Алдаа:', error);
-      
-      let errorMsg = error.message;
-      if (errorMsg.includes('license')) {
-        errorMsg = 'Лиценз түлхүүр буруу эсвэл хүчингүй байна.';
-      } else if (errorMsg.includes('camera')) {
-        errorMsg = 'Камер нээх боломжгүй. Камерын зөвшөөрөл өгсөн эсэхийг шалгана уу.';
-      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
-        errorMsg = 'Интернет холболт амжилтгүй. Wi-Fi эсвэл мобайл датагаа шалгана уу.';
-      }
-      
-      loadingText.textContent = '❌ Алдаа гарлаа';
-      errorDetail.textContent = errorMsg;
-      retryBtn.style.display = 'block';
-      deeparBadge.textContent = '💅 Алдаа';
-      deeparBadge.classList.add('error');
-      statusText.textContent = '❌ ' + errorMsg.substring(0, 30);
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ЭФФЕКТ СОЛИХ
-  // ═══════════════════════════════════════════════════════════════════════════
-  const EFFECTS = {
-    none: null,
-    red: 'https://cdn.deepar.ai/effects/red-nails',
-    pink: 'https://cdn.deepar.ai/effects/pink-nails',
-    french: 'https://cdn.deepar.ai/effects/french-nails',
-    glitter: 'https://cdn.deepar.ai/effects/glitter-nails'
+  const setStep = (id, state) => {
+    const el = document.getElementById(id);
+    if (el) { el.className = 'step-item ' + state; }
   };
+  const updateLayer = (text) => { layerBadge.textContent = text; };
 
-  async function switchEffect(effectKey) {
-    if (!deepAR) return;
-    
-    try {
-      statusText.textContent = 'Эффект ачаалж байна...';
-      const effectPath = EFFECTS[effectKey];
-      
-      if (effectPath) {
-        await deepAR.switchEffect(effectPath);
-        statusText.textContent = '✓ ' + effectKey + ' идэвхтэй';
-      } else {
-        await deepAR.switchEffect(null);
-        statusText.textContent = '✓ Байгалийн хумс';
-      }
-      
-      document.querySelectorAll('[data-effect]').forEach(el => {
-        el.classList.toggle('active', el.dataset.effect === effectKey);
-      });
-      
-    } catch (error) {
-      console.error('Эффект солих алдаа:', error);
-      statusText.textContent = '❌ Эффект ачаалсангүй';
+  try {
+    // ━━ LAYER 1: Deterministic analysis ━━━━━━━━━━━━━━━━━━━━━━━━
+    setStep('s1', 'active'); updateLayer('Layer 1 · Пиксел уншиж байна…');
+    const analyzed = analyzer.analyze(capturedCanvas);
+    setStep('s1', 'done');
+
+    // ━━ LAYER 2: Prepare rules from structured base ━━━━━━━━━━━━━
+    setStep('s2', 'active'); updateLayer('Layer 2 · Дүрмийн сан бэлдэж байна…');
+    const undertoneRule = RULES.undertone[analyzed.undertone];
+    await new Promise(r => setTimeout(r, 300));
+    setStep('s2', 'done');
+
+    // ━━ LAYER 3: Master AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    setStep('s3', 'active'); updateLayer('Layer 3 · Master AI шинжилж байна…');
+    statusBadge.textContent = 'Master AI…'; statusBadge.className = 'badge ai';
+    let masterResult = await callMasterAI(analyzed, capturedB64, false);
+    analyzed.estimatedAge = masterResult.estimated_age || 35;
+    setStep('s3', 'done');
+
+    // ━━ LAYER 4: Rule engine validation ━━━━━━━━━━━━━━━━━━━━━━━━━
+    setStep('s4', 'active'); updateLayer('Layer 4 · Дүрэм шалгаж байна…');
+    let validation = ruleEngine.validate(masterResult, analyzed);
+    setStep('s4', 'done');
+
+    // ━━ LAYER 5: Critic AI (only if needed) ━━━━━━━━━━━━━━━━━━━━━
+    let criticActivated = false;
+    let criticFixes = [];
+    if (!validation.valid && validation.issues.some(i => i.severity === 'high')) {
+      setStep('s5', 'active'); updateLayer('Layer 5 · Critic AI засварлаж байна…');
+      statusBadge.textContent = 'Critic AI…'; statusBadge.className = 'badge ai';
+      try {
+        const criticResult = await callCriticAI(masterResult, validation, analyzed, capturedB64);
+        criticFixes = validation.issues.map(i => i.message);
+        masterResult = criticResult;
+        // Re-validate after critic
+        validation = ruleEngine.validate(masterResult, analyzed);
+        criticActivated = true;
+      } catch(e) { /* critic failed, use master result anyway */ }
+      setStep('s5', 'done');
+    } else {
+      setStep('s5', 'done');
     }
+
+    // ━━ LAYER 6: Confidence score ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    setStep('s6', 'active'); updateLayer('Layer 6 · Итгэлийн оноо…');
+    const confidence = calcFinalConfidence(analyzed, validation);
+    await new Promise(r => setTimeout(r, 200));
+    setStep('s6', 'done');
+
+    statusBadge.textContent = '✨ Шинжилгээ дууслаа'; statusBadge.className = 'badge ok';
+    updateLayer(`Confidence: ${Math.round(confidence*100)}%`);
+
+    renderResult(masterResult, analyzed, validation, confidence, criticActivated, criticFixes);
+
+  } catch(e) {
+    const isAbort = e.name === 'AbortError';
+    panelInner.innerHTML = `
+      <div style="padding:18px;text-align:center">
+        <p style="color:#ff6666;font-size:14px">${isAbort ? '⏱ Хугацаа дуусав (15 сек)' : '❌ ' + e.message}</p>
+        <p style="color:#333;font-size:11px;margin-top:6px">API key шалгаад дахин оролдоорой</p>
+      </div>`;
+    statusBadge.textContent = '❌ Алдаа'; statusBadge.className = 'badge warn';
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderResult(r, analyzed, validation, confidence, criticActivated, criticFixes) {
+  const shapeIcons = {oval:'⬬',almond:'◆',square:'▯',round:'○',coffin:'▭',stiletto:'▲',squoval:'▭'};
+  const utLbl = {cool:'Хүйтэн',warm:'Дулаан',neutral:'Дунд',olive:'Олив'};
+  const dpLbl = {light:'Цайвар',medium:'Дунд',dark:'Бараан'};
+  const shK = (r.primary_shape||'oval').toLowerCase().split(/[\s/]/)[0];
+
+  // Confidence bar
+  const confPct = Math.round(confidence * 100);
+  const confLevel = confidence >= 0.75 ? RULES.confidence_thresholds.high
+                  : confidence >= 0.50 ? RULES.confidence_thresholds.medium
+                  : RULES.confidence_thresholds.low;
+
+  let h = '';
+
+  // ── Layer 1 results ──
+  h += `<div class="layer-header">Layer 1 · Deterministic Analysis</div>`;
+  h += `<div class="det-grid">
+    <div class="det-card">
+      <div class="dl">Арьсны гүн</div>
+      <div class="dv">${dpLbl[analyzed.depth]||analyzed.depth}</div>
+      <div class="dc">lum:${analyzed.luminance}</div>
+    </div>
+    <div class="det-card">
+      <div class="dl">Undertone</div>
+      <div class="dv">${utLbl[analyzed.undertone]||analyzed.undertone}</div>
+      <div class="dc">${Math.round(analyzed.undertoneConfidence*100)}% conf</div>
+    </div>
+    <div class="det-card">
+      <div class="dl">Бүтэц</div>
+      <div class="dv">${analyzed.textureScore < 0.3 ? 'Зөөлөн' : analyzed.textureScore < 0.6 ? 'Дунд' : 'Бүдүүвч'}</div>
+      <div class="dc">${Math.round(analyzed.textureScore*100)}%</div>
+    </div>
+  </div>`;
+
+  // ── Confidence bar ──
+  h += `<div class="layer-header">Layer 6 · Confidence</div>`;
+  h += `<div class="conf-bar-wrap">
+    <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:${confPct}%;background:${confLevel.color}"></div></div>
+    <div class="conf-label" style="color:${confLevel.color}">${confPct}%</div>
+  </div>`;
+  if (confidence < 0.5) {
+    h += `<div class="conf-warn">⚠️ ${confLevel.label} — Тод гэрэлтэй газарт гараа дахин фото авбал үр дүн дээшилнэ</div>`;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // EVENT LISTENERS
-  // ═══════════════════════════════════════════════════════════════════════════
-  document.querySelectorAll('[data-effect]').forEach(btn => {
-    btn.addEventListener('click', () => switchEffect(btn.dataset.effect));
-  });
-
-  retryBtn.addEventListener('click', () => {
-    errorDetail.textContent = '';
-    retryBtn.style.display = 'none';
-    loadingText.textContent = 'SDK ачаалж байна...';
-    initDeepAR();
-  });
-
-  window.addEventListener('beforeunload', () => {
-    if (deepAR) deepAR.dispose();
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
+  // ── Critic status ──
+  h += `<div class="layer-header">Layer 5 · Critic AI</div>`;
+  if (criticActivated) {
+    h += `<div class="critic-badge fixed">🔧 Critic засвар хийлээ</div>`;
+    if (criticFixes.length) {
+      h += `<div class="critic-fixes">${criticFixes.map(f=>`• ${f}`).join('<br>')}</div>`;
     }
-  });
+  } else {
+    h += `<div class="critic-badge pass">✓ Master AI дүрмийг дагасан — Critic шаардлагагүй</div>`;
+  }
 
-  // Эхлүүлэх
-  initDeepAR();
+  // ── Master AI result ──
+  h += `<div class="layer-header">Layer 3 · Master AI — Санал</div>`;
+  h += `<div class="shape-card">
+    <div class="shape-icon">${shapeIcons[shK]||'⬬'}</div>
+    <div class="shape-info">
+      <h3>${r.primary_shape||'Oval'}</h3>
+      <p>${r.length_suggestion||''}</p>
+      ${r.secondary_shape?`<p style="color:#2a3040;font-size:11px">Альтернатив: ${r.secondary_shape}</p>`:''}
+      ${r.avoid?`<div class="shape-avoid">Зайлсхийх: ${r.avoid}</div>`:''}
+    </div>
+  </div>`;
 
-})();
+  const colors = r.primary_colors || [];
+  if (colors.length) {
+    h += '<div class="colors-row">';
+    colors.forEach(c => {
+      const valid = !validation.issues.find(i=>i.hex===c.hex && i.severity==='high');
+      h += `<div class="color-card" style="${valid?'':'border-color:#3a1a1a;opacity:.7'}">
+        <div class="cswatch" style="background:${c.hex}"></div>
+        <div>
+          <div class="cname">${c.name}</div>
+          <div class="cwhy">${c.why||''}</div>
+        </div>
+      </div>`;
+    });
+    h += '</div>';
+  }
+
+  if (r.reasoning) {
+    h += `<div class="layer-header">Тайлбар</div>
+    <div class="reasoning"><p>${r.reasoning}</p></div>`;
+  }
+
+  h += `<div class="action-row">
+    <div class="abtn" onclick="document.getElementById('retakeBtn').click()">↩ Дахин авах</div>
+    <div class="abtn" onclick="document.getElementById('analyzeBtn').click()">🔄 Дахин шинжлэх</div>
+  </div>`;
+
+  panelInner.innerHTML = h;
+}
+
+// ── Camera + Capture ──────────────────────────────────────────────
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    await video.play();
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    statusBadge.textContent = 'Камер бэлэн ✓'; statusBadge.className = 'badge ok';
+  } catch(e) {
+    statusBadge.textContent = '❌ Камерын алдаа'; statusBadge.className = 'badge warn';
+  }
+}
+
+captureBtn.addEventListener('click', () => {
+  const tmp = document.createElement('canvas');
+  tmp.width = video.videoWidth; tmp.height = video.videoHeight;
+  tmp.getContext('2d').drawImage(video, 0, 0);
+  capturedCanvas = tmp;
+  capturedB64 = tmp.toDataURL('image/jpeg', 0.88).split(',')[1];
+
+  capturedImg.src = 'data:image/jpeg;base64,' + capturedB64;
+  capturedImg.style.display = 'block';
+  captureBtn.style.display = 'none';
+  retakeBtn.style.display  = 'inline-flex';
+  statusBadge.textContent  = '📸 Зураг авлаа ✓'; statusBadge.className = 'badge ok';
+  panelInner.innerHTML = '<p class="ph">✨ "Шинжилгээ" товч дарна уу</p>';
+});
+
+retakeBtn.addEventListener('click', () => {
+  capturedImg.style.display = 'none';
+  capturedImg.src = ''; capturedB64 = null; capturedCanvas = null;
+  captureBtn.style.display = 'inline-flex'; retakeBtn.style.display = 'none';
+  statusBadge.textContent  = 'Камер бэлэн ✓'; statusBadge.className = 'badge ok';
+  panelInner.innerHTML = '<p class="ph">Гараа камерт харуулаад 📸 аваарай</p>';
+});
+
+initCamera();
 </script>
 </body>
 </html>
