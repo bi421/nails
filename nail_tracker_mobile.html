@@ -1,105 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>💅 Nail Style AI · Эцсийн хувилбар</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>💅 Nail AI · Утсанд зориулсан</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{background:#060608;height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif}
-.app{width:100%;max-width:720px;height:100vh;display:flex;flex-direction:column;background:#0a0a0a;border-radius:0;overflow:hidden}
+html,body{background:#000;height:100vh;width:100vw;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw;background:#0a0a0a}
 .camera-container{position:relative;flex:1;background:#000;overflow:hidden}
 video,canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+video{background:#000}
 canvas{z-index:10}
 .hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:20;pointer-events:none;gap:8px}
-.badge{background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);color:#fff;padding:5px 12px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.1)}
-.badge.ok{color:#88ffaa;border-color:rgba(80,200,100,0.3)}
+.badge{background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;padding:6px 14px;border-radius:30px;font-size:12px;border:1px solid rgba(255,255,255,0.1)}
+.badge.ok{color:#88ffaa}
 .badge.warn{color:#ffaa55}
-.badge.user{color:#a78bfa;border-color:rgba(167,139,250,0.3)}
 .controls{position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:12px;z-index:20;padding:0 20px}
-.btn{background:rgba(30,30,50,0.95);backdrop-filter:blur(8px);color:#fff;border:1px solid #8b5cf6;padding:14px 28px;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.btn{background:rgba(30,30,50,0.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;border:1px solid #8b5cf6;padding:16px 32px;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
 .btn.primary{background:linear-gradient(135deg,#1e1e4e,#3d2b5e);border-color:#a78bfa}
 .btn:active{transform:scale(0.96)}
 .btn:disabled{opacity:0.5;pointer-events:none}
-.panel{background:#121218;border-top:1px solid #222230;padding:16px 18px 22px;max-height:45vh;overflow-y:auto}
-.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.panel-title{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1.5px}
-.user-badge{display:flex;align-items:center;gap:6px}
-.user-badge span{color:#a78bfa;font-size:12px}
-.visit-count{background:#1a1a2e;color:#a78bfa;padding:2px 8px;border-radius:20px;font-size:10px}
-.returning-message{background:#0e0e1a;border:1px solid #2a2a4a;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.returning-message .icon{font-size:22px}
-.returning-message p{color:#b0a0d0;font-size:13px;line-height:1.5}
-.style-card{background:#0a0a14;border:1px solid #1a1a2e;border-radius:16px;padding:16px;margin-bottom:12px}
-.style-name{font-size:20px;font-weight:bold;color:#a78bfa;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.style-badge{background:#1a1a3e;color:#8888cc;padding:2px 8px;border-radius:20px;font-size:9px;text-transform:uppercase}
-.shape-section{margin:14px 0}
-.shape-label{color:#666;font-size:10px;margin-bottom:6px}
-.shape-display{display:flex;align-items:center;gap:10px}
-.shape-icon{font-size:30px}
-.shape-name{font-size:18px;color:#ddd}
-.shape-desc{color:#666;font-size:11px;margin-top:4px}
-.colors-section{margin:14px 0}
-.colors-grid{display:flex;gap:12px;flex-wrap:wrap}
-.color-item{display:flex;align-items:center;gap:8px;background:#06060e;border-radius:10px;padding:8px 12px;flex:1;min-width:100px}
-.color-dot{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,0.15)}
-.color-info .name{font-size:13px;color:#ddd}
-.color-info .hex{font-size:10px;color:#666}
-.reasoning{background:#060410;border-left:3px solid #8b5cf6;padding:12px 14px;border-radius:8px;margin:14px 0}
-.reasoning p{color:#8877aa;font-size:13px;line-height:1.6;font-style:italic}
-.action-row{display:flex;gap:10px;margin-top:16px}
-.action-btn{flex:1;padding:12px;background:#0e0e1a;border:1px solid #2a2a4a;color:#a78bfa;border-radius:30px;font-size:13px;font-weight:500;cursor:pointer;text-align:center}
-.action-btn.primary{background:#1a1a3e;border-color:#8b5cf6;color:#c4b5fd}
-.action-btn:active{opacity:0.7}
-.rate-section{display:flex;gap:10px;margin-top:10px}
-.rate-btn{flex:1;padding:10px;background:transparent;border:1px solid #2a2a4a;border-radius:30px;font-size:12px;cursor:pointer;color:#666}
-.rate-btn.like{border-color:#2a4a2a;color:#88aa88}
-.rate-btn.dislike{border-color:#4a2a2a;color:#aa8888}
+.panel{background:#121218;border-top:1px solid #222230;padding:16px 18px 22px;max-height:40vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.panel-title{color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px}
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;gap:12px}
-.spinner{width:36px;height:36px;border:3px solid #1a1a2e;border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
+.spinner{width:40px;height:40px;border:3px solid #1a1a2e;border-top-color:#8b5cf6;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading p{color:#666;font-size:13px}
-.ph{color:#444;text-align:center;padding:30px;font-size:14px}
-.toast{position:fixed;bottom:100px;left:20px;right:20px;background:#1a1a3e;color:#a78bfa;padding:12px;border-radius:30px;text-align:center;font-size:13px;z-index:100;animation:fadeInOut 2s ease}
-@keyframes fadeInOut{0%,100%{opacity:0}10%,90%{opacity:1}}
-.settings-panel{position:absolute;top:50px;right:10px;background:#0a0a14;border:1px solid #2a2a4a;border-radius:12px;padding:14px;z-index:50;display:none}
+.loading p{color:#888;font-size:14px}
+.ph{color:#666;text-align:center;padding:30px;font-size:14px}
+.toast{position:fixed;bottom:100px;left:20px;right:20px;background:#1a1a3e;color:#a78bfa;padding:14px;border-radius:30px;text-align:center;font-size:14px;z-index:100}
+.settings-btn{position:absolute;top:12px;right:12px;z-index:30;background:rgba(0,0,0,0.6);color:#888;border:1px solid #444;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+.settings-panel{position:absolute;top:60px;right:12px;background:#0a0a14;border:1px solid #2a2a4a;border-radius:14px;padding:16px;z-index:50;display:none;width:280px}
 .settings-panel.show{display:block}
-.settings-panel input{width:100%;background:#06060e;border:1px solid #2a2a4a;color:#fff;padding:8px;border-radius:8px;font-size:12px;margin:8px 0}
-.settings-btn{position:absolute;top:10px;right:10px;z-index:30;background:rgba(0,0,0,0.5);color:#666;border:1px solid #333;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.settings-panel input{width:100%;background:#06060e;border:1px solid #2a2a4a;color:#fff;padding:12px;border-radius:10px;font-size:14px;margin:10px 0}
+.settings-panel button{width:100%;padding:12px;background:#1a1a3e;border:1px solid #8b5cf6;color:#c4b5fd;border-radius:10px;font-size:14px;cursor:pointer}
+.style-card{background:#0a0a14;border:1px solid #1a1a2e;border-radius:16px;padding:16px;margin-bottom:12px}
+.style-name{font-size:20px;font-weight:bold;color:#a78bfa;margin-bottom:12px}
+.colors-grid{display:flex;gap:10px;flex-wrap:wrap}
+.color-item{display:flex;align-items:center;gap:10px;background:#06060e;border-radius:12px;padding:10px 14px;flex:1;min-width:110px}
+.color-dot{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,0.15)}
+.reasoning{background:#060410;border-left:3px solid #8b5cf6;padding:14px;border-radius:10px;margin:14px 0}
+.reasoning p{color:#8877aa;font-size:14px;line-height:1.6}
+.action-btn{flex:1;padding:14px;background:#0e0e1a;border:1px solid #2a2a4a;color:#a78bfa;border-radius:30px;font-size:14px;font-weight:500;cursor:pointer;text-align:center}
+.action-btn.primary{background:#1a1a3e;border-color:#8b5cf6;color:#c4b5fd}
+.action-row{display:flex;gap:10px;margin-top:16px}
 </style>
 </head>
 <body>
-<div class="app">
+<div id="app">
   <div class="camera-container">
-    <video id="video" playsinline autoplay muted></video>
+    <video id="video" playsinline autoplay muted webkit-playsinline></video>
     <canvas id="canvas"></canvas>
+    
     <button class="settings-btn" id="settingsToggle">⚙</button>
     <div class="settings-panel" id="settingsPanel">
-      <div style="margin-bottom:8px;color:#a78bfa;font-size:12px">API Key</div>
+      <div style="color:#a78bfa;font-size:14px;margin-bottom:8px">API Key</div>
       <input type="password" id="apiKeyInput" placeholder="AIza...">
-      <button class="action-btn" id="saveApiKeyBtn" style="padding:6px;font-size:11px">Хадгалах</button>
-      <div style="margin-top:12px;margin-bottom:8px;color:#a78bfa;font-size:12px">Профайл</div>
-      <button class="action-btn" id="clearProfileBtn" style="padding:6px;font-size:11px">🗑️ Устгах</button>
-      <div style="font-size:10px;color:#445;margin-top:8px" id="storageInfo"></div>
+      <button id="saveApiKeyBtn">Хадгалах</button>
+      <div style="margin-top:16px;margin-bottom:8px;color:#a78bfa;font-size:14px">Профайл</div>
+      <button id="clearProfileBtn" style="background:#2a1a1a;border-color:#8b3a3a;color:#ff8888">🗑️ Устгах</button>
     </div>
+    
     <div class="hud">
-      <span class="badge" id="statusBadge">📸 Гараа харуулна уу</span>
-      <span class="badge user" id="userBadge">👤 Зочин</span>
+      <span class="badge" id="statusBadge">📸 Камер ачаалж байна...</span>
+      <span class="badge" id="userBadge">👤 Зочин</span>
     </div>
+    
     <div class="controls">
-      <button class="btn" id="captureBtn">📸 Зураг авах</button>
+      <button class="btn" id="captureBtn">📸 Зураг</button>
       <button class="btn primary" id="analyzeBtn">✨ Шинжилгээ</button>
     </div>
   </div>
+  
   <div class="panel" id="panel">
-    <div class="panel-header">
-      <div class="panel-title">💅 САНАЛ БОЛГОСОН ЗАГВАР</div>
-      <div class="user-badge" id="userInfo" style="display:none">
-        <span id="visitCountDisplay"></span>
-      </div>
-    </div>
+    <div class="panel-title">💅 САНАЛ БОЛГОСОН ЗАГВАР</div>
     <div id="panelContent">
-      <p class="ph">📸 Зураг аваад "Шинжилгээ" дарна уу</p>
+      <p class="ph">📸 "Зураг" товч дарж гарын зургаа авна уу</p>
     </div>
   </div>
 </div>
@@ -107,13 +83,13 @@ canvas{z-index:10}
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// ҮЙЛДВЭРЛЭЛИЙН БЭЛЭН · _analyzeMode ЛОГИК ЗАСАГДСАН
+// УТСАН ДЭЭР АЖИЛЛАХ ЗАСВАРЛАСАН ХУВИЛБАР
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEYS = {
-  API_KEY: 'nail_api_key_v6',
-  PROFILES: 'nail_profiles_v7',
-  DEVICE_ID: 'nail_device_id_v6'
+  API_KEY: 'nail_api_key_mobile',
+  PROFILES: 'nail_profiles_mobile',
+  DEVICE_ID: 'nail_device_mobile'
 };
 const MODEL = 'gemini-2.0-flash';
 const API_TIMEOUT = 15000;
@@ -124,102 +100,16 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const offscreenCanvas = document.createElement('canvas');
-const offscreenCtx = offscreenCanvas.getContext('2d');
-
-let capturedImageData = null;
-let rafId = null;
-let isAnalyzing = false;
-
 const statusBadge = document.getElementById('statusBadge');
 const userBadge = document.getElementById('userBadge');
-const userInfo = document.getElementById('userInfo');
-const visitCountDisplay = document.getElementById('visitCountDisplay');
 const panelContent = document.getElementById('panelContent');
 const analyzeBtn = document.getElementById('analyzeBtn');
 const captureBtn = document.getElementById('captureBtn');
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MEDIAPIPE WRAPPER — ЗӨВ _analyzeMode ЛОГИК
-// ═══════════════════════════════════════════════════════════════════════════
-class MediaPipeWrapper {
-  constructor() {
-    this.hands = null;
-    this.pendingResolver = null;
-    this._analyzeMode = false;
-  }
-  
-  async initialize() {
-    this.hands = new Hands({
-      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`
-    });
-    
-    this.hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.6,
-      selfieMode: false
-    });
-    
-    // ★ ЗАСВАР: ЗӨВ ЛОГИК
-    this.hands.onResults((results) => {
-      // RAF үед (_analyzeMode = false) → үл тоомсорлох
-      if (!this._analyzeMode) return;
-      
-      // Analyze үед (_analyzeMode = true) → pendingResolver дуудах
-      this._analyzeMode = false;
-      
-      if (this.pendingResolver) {
-        const landmarks = results.multiHandLandmarks?.[0] || null;
-        const resolve = this.pendingResolver;
-        this.pendingResolver = null;
-        resolve(landmarks);
-      }
-    });
-    
-    await this.hands.initialize();
-  }
-  
-  // RAF loop-д зориулсан
-  sendForRaf(image) {
-    if (!this.hands) return;
-    this.hands.send({ image }).catch(() => {});
-  }
-  
-  // Анализид зориулсан
-  async sendAndWait(image) {
-    if (!this.hands) return null;
-    
-    // ★ analyzeMode асаах
-    this._analyzeMode = true;
-    
-    const promise = new Promise((resolve) => {
-      this.pendingResolver = resolve;
-    });
-    
-    await this.hands.send({ image }).catch(() => {});
-    
-    // Timeout хамгаалалт (3 секунд)
-    const timeoutPromise = new Promise((resolve) => setTimeout(() => {
-      if (this.pendingResolver) {
-        this._analyzeMode = false;
-        this.pendingResolver = null;
-      }
-      resolve(null);
-    }, 3000));
-    
-    const result = await Promise.race([promise, timeoutPromise]);
-    
-    return result;
-  }
-  
-  isReady() {
-    return this.hands !== null;
-  }
-}
-
-const mpWrapper = new MediaPipeWrapper();
+let capturedImageData = null;
+let handsModel = null;
+let isAnalyzing = false;
+let currentProfile = null;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // API KEY MANAGEMENT
@@ -232,279 +122,204 @@ document.getElementById('saveApiKeyBtn').addEventListener('click', () => {
   showToast('API Key хадгалагдлаа');
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STABLE HAND IDENTIFIER
-// ═══════════════════════════════════════════════════════════════════════════
-class StableHandIdentifier {
-  constructor() {
-    this.deviceId = this.getOrCreateDeviceId();
-  }
-  
-  getOrCreateDeviceId() {
-    let id = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
-    if (!id) {
-      id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 8);
-      localStorage.setItem(STORAGE_KEYS.DEVICE_ID, id);
-    }
-    return id;
-  }
-  
-  generateHandId(landmarks) {
-    if (!landmarks) return null;
-    
-    const ratios = this.calculateFingerRatios(landmarks);
-    const palmSize = this.calculatePalmSize(landmarks);
-    const spacing = this.calculateFingerSpacing(landmarks);
-    
-    const fuzzyRatios = ratios.map(r => Math.round(r * 100) / 100).join('_');
-    const fuzzyPalm = Math.round(palmSize * 100) / 100;
-    const fuzzySpacing = Math.round(spacing * 100) / 100;
-    
-    const combined = `${this.deviceId}_${fuzzyRatios}_${fuzzyPalm}_${fuzzySpacing}`;
-    return this.simpleHash(combined);
-  }
-  
-  calculateFingerRatios(landmarks) {
-    const fingers = [[8,7], [12,11], [16,15], [20,19]];
-    return fingers.map(([tip, dip]) => {
-      const t = landmarks[tip], d = landmarks[dip];
-      if (!t || !d) return 0;
-      return Math.hypot(t.x - d.x, t.y - d.y);
-    });
-  }
-  
-  calculatePalmSize(landmarks) {
-    const wrist = landmarks[0], middleMcp = landmarks[9];
-    if (!wrist || !middleMcp) return 0;
-    return Math.hypot(wrist.x - middleMcp.x, wrist.y - middleMcp.y);
-  }
-  
-  calculateFingerSpacing(landmarks) {
-    const mcps = [5, 9, 13, 17];
-    let total = 0;
-    for (let i = 0; i < mcps.length - 1; i++) {
-      const a = landmarks[mcps[i]], b = landmarks[mcps[i+1]];
-      if (a && b) total += Math.hypot(a.x - b.x, a.y - b.y);
-    }
-    return total;
-  }
-  
-  simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36);
-  }
-}
+document.getElementById('settingsToggle').addEventListener('click', () => {
+  document.getElementById('settingsPanel').classList.toggle('show');
+});
+
+document.getElementById('clearProfileBtn').addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEYS.PROFILES);
+  currentProfile = null;
+  userBadge.textContent = '👤 Зочин';
+  capturedImageData = null;
+  panelContent.innerHTML = '<p class="ph">Профайл устгагдлаа. Шинээр зураг авна уу</p>';
+  showToast('🗑️ Профайл устгагдлаа');
+  document.getElementById('settingsPanel').classList.remove('show');
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
-// USER PROFILE MANAGER
+// SIMPLE PROFILE MANAGER (утсанд зориулсан хялбаршуулсан)
 // ═══════════════════════════════════════════════════════════════════════════
-class UserProfileManager {
-  constructor() {
-    this.storageKey = STORAGE_KEYS.PROFILES;
-    this.maxProfiles = 50;
-    this.currentUser = null;
-  }
-  
-  identifyUser(landmarks) {
-    const identifier = new StableHandIdentifier();
-    const handId = identifier.generateHandId(landmarks);
-    
-    if (!handId) return { isNewUser: true, profile: this.createNewProfile() };
-    
-    let profiles = {};
-    try {
-      const stored = localStorage.getItem(this.storageKey);
-      profiles = stored ? JSON.parse(stored) : {};
-    } catch (e) { console.warn('Profile уншихад алдаа:', e); }
-    
-    if (profiles[handId]) {
-      this.currentUser = profiles[handId];
-      this.currentUser.lastVisit = new Date().toISOString();
-      this.currentUser.visitCount++;
-      this.saveProfile();
-      return { isNewUser: false, profile: this.currentUser };
+function getOrCreateProfile() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.PROFILES);
+    if (stored) {
+      currentProfile = JSON.parse(stored);
+      currentProfile.visitCount = (currentProfile.visitCount || 0) + 1;
+      currentProfile.lastVisit = new Date().toISOString();
     } else {
-      this.currentUser = this.createNewProfile(handId);
-      return { isNewUser: true, profile: this.currentUser };
+      currentProfile = {
+        userId: 'user_' + Date.now().toString(36),
+        firstVisit: new Date().toISOString(),
+        lastVisit: new Date().toISOString(),
+        visitCount: 1,
+        analysis: null,
+        suggestedStyles: [],
+        avoidedStyles: []
+      };
     }
-  }
-  
-  createNewProfile(handId = null) {
-    return {
-      userId: handId || 'temp_' + Date.now().toString(36),
-      firstVisit: new Date().toISOString(),
-      lastVisit: new Date().toISOString(),
-      visitCount: 1,
-      analysis: null,
-      suggestedStyles: [],
-      preferences: { favoriteColors: [], favoriteShapes: [], avoidedStyles: [] }
-    };
-  }
-  
-  saveAnalysis(analysis) {
-    if (!this.currentUser) return false;
-    if (!this.currentUser.analysis && analysis) {
-      this.currentUser.analysis = { ...analysis, analyzedAt: new Date().toISOString() };
-      this.saveProfile();
-      return true;
-    }
-    return false;
-  }
-  
-  suggestNewStyle(newStyle) {
-    if (!this.currentUser || !newStyle) return newStyle;
-    
-    const previousStyles = this.currentUser.suggestedStyles;
-    const avoidedStyles = this.currentUser.preferences.avoidedStyles;
-    
-    const sortedNewColors = (newStyle.colors || []).map(c => c.hex).sort();
-    
-    const isDuplicate = previousStyles.some(s => {
-      const sortedOldColors = (s.colors || []).map(c => c.hex).sort();
-      return s.shape === newStyle.shape && 
-             JSON.stringify(sortedOldColors) === JSON.stringify(sortedNewColors);
-    });
-    
-    const isAvoided = avoidedStyles.some(a => {
-      const sortedAvoidColors = (a.colors || []).map(c => c.hex).sort();
-      const matchCount = sortedNewColors.filter(nc => sortedAvoidColors.includes(nc)).length;
-      return a.shape === newStyle.shape || matchCount >= 2;
-    });
-    
-    if (isDuplicate || isAvoided) {
-      return { ...newStyle, isAlternative: true, message: 'Өмнөхөөс өөр загвар' };
-    }
-    
-    const styleWithId = {
-      ...newStyle,
-      id: 'style_' + Date.now(),
-      suggestedAt: new Date().toISOString(),
-      viewed: true,
-      liked: null
-    };
-    
-    this.currentUser.suggestedStyles.push(styleWithId);
-    this.saveProfile();
-    return styleWithId;
-  }
-  
-  rateStyle(styleId, liked) {
-    if (!this.currentUser) return;
-    
-    const style = this.currentUser.suggestedStyles.find(s => s.id === styleId);
-    if (style) {
-      style.liked = liked;
-      
-      if (!liked) {
-        this.currentUser.preferences.avoidedStyles.push({
-          shape: style.shape,
-          colors: style.colors || []
-        });
-      } else {
-        if (style.colors) {
-          this.currentUser.preferences.favoriteColors.push(...style.colors.map(c => c.hex));
-        }
-        this.currentUser.preferences.favoriteShapes.push(style.shape);
-      }
-      this.saveProfile();
-    }
-  }
-  
-  saveProfile() {
-    if (!this.currentUser?.userId) return;
-    try {
-      const stored = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
-      stored[this.currentUser.userId] = this.currentUser;
-      
-      const keys = Object.keys(stored);
-      if (keys.length > this.maxProfiles) {
-        const sorted = keys.sort((a, b) => 
-          (stored[a].lastVisit || '').localeCompare(stored[b].lastVisit || '')
-        );
-        sorted.slice(0, keys.length - this.maxProfiles).forEach(k => delete stored[k]);
-      }
-      
-      localStorage.setItem(this.storageKey, JSON.stringify(stored));
-      this.updateStorageInfo();
-    } catch (e) { console.warn('Profile хадгалахад алдаа:', e); }
-  }
-  
-  getProfile() { return this.currentUser; }
-  hasAnalysis() { return this.currentUser?.analysis !== null; }
-  
-  clearCurrentProfile() {
-    if (!this.currentUser?.userId) return;
-    try {
-      const stored = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
-      delete stored[this.currentUser.userId];
-      localStorage.setItem(this.storageKey, JSON.stringify(stored));
-      this.currentUser = null;
-      this.updateStorageInfo();
-    } catch (e) {}
-  }
-  
-  updateStorageInfo() {
-    try {
-      const stored = localStorage.getItem(this.storageKey);
-      const size = stored ? (stored.length / 1024).toFixed(1) : '0';
-      const count = stored ? Object.keys(JSON.parse(stored)).length : 0;
-      document.getElementById('storageInfo').textContent = `${count} профайл · ${size} KB`;
-    } catch (e) {}
+    localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(currentProfile));
+    userBadge.textContent = `👤 ${currentProfile.visitCount > 1 ? 'Эргэн ирсэн' : 'Шинэ'}`;
+    return currentProfile;
+  } catch(e) {
+    return null;
   }
 }
 
-const profileManager = new UserProfileManager();
+function saveProfile() {
+  if (currentProfile) {
+    localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(currentProfile));
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AI KNOWLEDGE BASE
+// MEDIAPIPE INIT (утсанд оновчтой)
 // ═══════════════════════════════════════════════════════════════════════════
-const NAIL_RULE_BASE = `
-# ХУМСНЫ ЗАГВАРЫН ДҮРМИЙН САН
-## UNDERTONE-Д ТОХИРОХ ӨНГӨ
-- warm: terracotta (#C4622D), warm gold (#D4AF37), caramel (#CC8844), burnt coral (#E8956D)
-- cool: dusty mauve (#C8A8B8), lavender grey (#9B8FA0), deep plum (#4A3040), berry (#8B3A62)
-- olive: burgundy (#800000), forest green (#556B2F), copper (#6B3A2A), earthy nude (#8B7355)
-- neutral: dusty rose (#D4A5A5), mauve (#C490A0), classic red (#CC3333), warm nude (#E8C5A5)
-## ХУРУУНЫ ТӨРӨЛД ТОХИРОХ ХЭЛБЭР
+async function initMediaPipe() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const hands = new Hands({
+        locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`
+      });
+      
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.6,
+        selfieMode: false
+      });
+      
+      hands.onResults((results) => {
+        if (results.multiHandLandmarks?.[0]) {
+          window._tempLandmarks = results.multiHandLandmarks[0];
+        }
+      });
+      
+      await hands.initialize();
+      handsModel = hands;
+      resolve();
+    } catch(e) {
+      reject(e);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMERA INIT (утсанд оновчтой)
+// ═══════════════════════════════════════════════════════════════════════════
+async function initCamera() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      
+      video.srcObject = stream;
+      
+      // Утсан дээр loadedmetadata хүлээх
+      await new Promise(r => {
+        video.onloadedmetadata = () => {
+          video.play().then(() => {
+            // Canvas хэмжээг тохируулах
+            setTimeout(() => {
+              if (video.videoWidth && video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+              } else {
+                canvas.width = 1280;
+                canvas.height = 720;
+              }
+              statusBadge.textContent = '📸 Камер бэлэн';
+              statusBadge.className = 'badge ok';
+              resolve();
+            }, 100);
+          }).catch(e => {
+            console.warn('Autoplay алдаа:', e);
+            resolve(); // Гараар тоглуулах боломжтой
+          });
+          r();
+        };
+      });
+      
+    } catch(e) {
+      statusBadge.textContent = '❌ Камерын алдаа';
+      statusBadge.className = 'badge warn';
+      reject(e);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LANDMARK WAITER
+// ═══════════════════════════════════════════════════════════════════════════
+async function getLandmarks(imageCanvas) {
+  window._tempLandmarks = null;
+  
+  if (!handsModel) return null;
+  
+  await handsModel.send({ image: imageCanvas });
+  
+  // Max 2 секунд хүлээх
+  for (let i = 0; i < 40; i++) {
+    if (window._tempLandmarks) return window._tempLandmarks;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI CALL
+// ═══════════════════════════════════════════════════════════════════════════
+async function callAI(imageBase64) {
+  if (!API_KEY) throw new Error('API Key оруулаагүй байна. ⚙️ тохиргооноос оруулна уу');
+  if (!navigator.onLine) throw new Error('Интернет холболт байхгүй байна');
+  
+  const prompt = `Та хумсны загварын мэргэжилтэн. Энэ гарын зургийг шинжилж, арьсны өнгө, undertone, хурууны төрлийг тодорхойл. Дараах дүрмийг баримтлан загвар санал болго.
+
+UNDERTONE-Д ТОХИРОХ ӨНГӨ:
+- warm: terracotta (#C4622D), warm gold (#D4AF37), caramel (#CC8844)
+- cool: dusty mauve (#C8A8B8), lavender grey (#9B8FA0), deep plum (#4A3040)
+- olive: burgundy (#800000), forest green (#556B2F), copper (#6B3A2A)
+- neutral: dusty rose (#D4A5A5), mauve (#C490A0), classic red (#CC3333)
+
+ХУРУУНЫ ТӨРӨЛД ТОХИРОХ ХЭЛБЭР:
 - урт нарийн: almond, stiletto
 - урт өргөн: coffin, oval
 - дунд: oval, round
 - богино: squoval, round
-`;
 
-const FEW_SHOT_EXAMPLES = `
-## ЖИШЭЭ 1
-Анализ: {"skinTone":"medium","undertone":"warm","fingerType":"long"}
-Санал: {"name":"Намрын бүрий","shape":"almond","shapeDesc":"урт хурууг гоёмсог тодотгоно","colors":[{"hex":"#C4622D","name":"Terracotta"},{"hex":"#D4AF37","name":"Warm Gold"},{"hex":"#CC8844","name":"Caramel"}],"finish":"chrome","reasoning":"Таны дулаан undertone-т terracotta болон алтан өнгө хамгийн зохимжтой."}
-## ЖИШЭЭ 2
-Анализ: {"skinTone":"light","undertone":"cool","fingerType":"medium"}
-Санал: {"name":"Сувдан үүр","shape":"oval","shapeDesc":"сонгодог дэгжин","colors":[{"hex":"#C8A8B8","name":"Dusty Mauve"},{"hex":"#9B8FA0","name":"Lavender Grey"},{"hex":"#4A3040","name":"Deep Plum"}],"finish":"pearl","reasoning":"Хүйтэн undertone-т ягаан, нил ягаан өнгө төгс зохицно."}
-`;
+JSON форматаар хариу өг:
+{
+  "analysis": {"skinTone":"medium","undertone":"warm","fingerType":"long"},
+  "style": {
+    "name":"Загварын нэр",
+    "shape":"almond",
+    "shapeDesc":"тайлбар",
+    "colors":[{"hex":"#C4622D","name":"Terracotta"}],
+    "finish":"chrome",
+    "reasoning":"Монгол хэлээр тайлбар"
+  }
+}`;
 
-async function callAISafely(prompt, imageBase64 = null, temperature = 0.8) {
-  if (!API_KEY) throw new Error('API Key оруулаагүй байна. ⚙️ тохиргооноос оруулна уу');
-  if (!navigator.onLine) throw new Error('Интернет холболт байхгүй байна');
-  
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
   
   try {
-    const parts = [{ text: prompt }];
-    if (imageBase64) {
-      parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageBase64.split(',')[1] } });
-    }
-    
     const res = await fetch(`${API_URL}?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature, maxOutputTokens: 1200, responseMimeType: 'application/json' }
+        contents: [{ parts: [
+          { text: prompt },
+          { inline_data: { mime_type: 'image/jpeg', data: imageBase64.split(',')[1] } }
+        ]}],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 1000, responseMimeType: 'application/json' }
       })
     });
     
@@ -515,39 +330,18 @@ async function callAISafely(prompt, imageBase64 = null, temperature = 0.8) {
     if (data.error) throw new Error(data.error.message);
     
     const rawText = data.candidates[0].content.parts[0].text;
+    const match = rawText.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : JSON.parse(rawText);
     
-    try {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
-      return JSON.parse(rawText);
-    } catch (e) {
-      console.warn('JSON parse алдаа, raw text ашиглаж байна:', rawText);
-      return { raw: rawText };
-    }
-  } catch (e) {
+  } catch(e) {
     clearTimeout(timeoutId);
-    if (e.name === 'AbortError') throw new Error('Хугацаа дуусав (15 сек). Дахин оролдоно уу');
+    if (e.name === 'AbortError') throw new Error('Хугацаа дуусав. Дахин оролдоно уу');
     throw e;
   }
 }
 
-async function performAIAnalysis(imageBase64) {
-  const prompt = `${NAIL_RULE_BASE}\n\n${FEW_SHOT_EXAMPLES}\n\nЭнэ гарын зургийг шинжилж, арьсны өнгө, undertone, хурууны төрлийг тодорхойл. Дээрх дүрмийг баримтлан загвар санал болго.\n\nJSON форматаар хариу өг.`;
-  return await callAISafely(prompt, imageBase64, 0.8);
-}
-
-async function requestNewStyleFromAI(existingAnalysis, avoidedStyles) {
-  const avoidedShapes = avoidedStyles.map(s => s.shape).filter(Boolean);
-  const avoidedColors = avoidedStyles.flatMap(s => (s.colors || []).map(c => c.hex));
-  
-  const prompt = `${NAIL_RULE_BASE}\n\n${FEW_SHOT_EXAMPLES}\n\nШинжилгээ: ${JSON.stringify(existingAnalysis)}\nДургүй хэлбэр: ${avoidedShapes.join(', ') || 'байхгүй'}\nДургүй өнгө: ${avoidedColors.join(', ') || 'байхгүй'}\n\nӨмнөхөөс ӨӨР, ШИНЭ загвар санал болго. JSON форматаар хариу өг.`;
-  
-  const result = await callAISafely(prompt, null, 0.9);
-  return result.style || result;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
-// UI FUNCTIONS
+// UI HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 function showToast(message) {
   const toast = document.createElement('div');
@@ -557,138 +351,57 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 2000);
 }
 
-function updateUserUI() {
-  const profile = profileManager.getProfile();
-  if (profile) {
-    userBadge.textContent = `👤 ${profile.visitCount > 1 ? 'Эргэн ирсэн' : 'Шинэ'}`;
-    userInfo.style.display = 'flex';
-    visitCountDisplay.textContent = `🔁 ${profile.visitCount}`;
-  }
-}
-
-function renderReturningUser(lastStyle) {
+function renderStyle(style, isReturning = false) {
   const shapeIcons = { almond: '◆', oval: '⬬', round: '○', square: '▯', coffin: '▭', stiletto: '▲' };
+  
   return `
-    <div class="returning-message"><span class="icon">👋</span><p>Тавтай морил! Таны өмнөх загвар.</p></div>
+    ${isReturning ? '<div style="background:#0e0e1a;padding:12px;border-radius:12px;margin-bottom:14px;color:#a78bfa">👋 Тавтай морил! Таны өмнөх загвар.</div>' : ''}
     <div class="style-card">
-      <div class="style-name">${lastStyle.name || 'Таны загвар'}<span class="style-badge">өмнөх</span></div>
-      <div class="shape-section">
-        <div class="shape-label">САНАЛ БОЛГОСОН ХЭЛБЭР</div>
-        <div class="shape-display"><span class="shape-icon">${shapeIcons[lastStyle.shape] || '⬬'}</span><span class="shape-name">${lastStyle.shape || '-'}</span></div>
-        <div class="shape-desc">${lastStyle.shapeDesc || ''}</div>
+      <div class="style-name">${style.name || 'Таны загвар'}</div>
+      <div style="margin:12px 0">
+        <div style="color:#666;font-size:11px;margin-bottom:6px">ХЭЛБЭР</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:28px">${shapeIcons[style.shape] || '⬬'}</span>
+          <span style="font-size:18px;color:#ddd">${style.shape || '-'}</span>
+        </div>
+        <div style="color:#666;font-size:12px;margin-top:4px">${style.shapeDesc || ''}</div>
       </div>
-      <div class="colors-section">
-        <div class="shape-label">САНАЛ БОЛГОСОН ӨНГӨНҮҮД</div>
-        <div class="colors-grid">${(lastStyle.colors || []).map(c => `<div class="color-item"><div class="color-dot" style="background:${c.hex}"></div><div class="color-info"><div class="name">${c.name}</div><div class="hex">${c.hex}</div></div></div>`).join('')}</div>
+      <div style="margin:12px 0">
+        <div style="color:#666;font-size:11px;margin-bottom:6px">ӨНГӨНҮҮД</div>
+        <div class="colors-grid">
+          ${(style.colors || []).map(c => `
+            <div class="color-item">
+              <div class="color-dot" style="background:${c.hex}"></div>
+              <div><div style="color:#ddd">${c.name}</div><div style="color:#666;font-size:11px">${c.hex}</div></div>
+            </div>
+          `).join('')}
+        </div>
       </div>
-      <div class="reasoning"><p>💬 ${lastStyle.reasoning || ''}</p></div>
-    </div>
-    <div class="action-row"><div class="action-btn primary" data-action="newStyle">✨ Шинэ загвар хүсэх</div></div>`;
-}
-
-function renderNewStyle(style, isAlternative = false) {
-  const shapeIcons = { almond: '◆', oval: '⬬', round: '○', square: '▯', coffin: '▭', stiletto: '▲' };
-  return `
-    ${isAlternative ? '<div class="returning-message"><span class="icon">🔄</span><p>Өмнөхөөс өөр, шинэ загвар!</p></div>' : ''}
-    <div class="style-card">
-      <div class="style-name">${style.name || 'Таны шинэ загвар'}${isAlternative ? '<span class="style-badge">шинэ</span>' : ''}</div>
-      <div class="shape-section">
-        <div class="shape-label">САНАЛ БОЛГОСОН ХЭЛБЭР</div>
-        <div class="shape-display"><span class="shape-icon">${shapeIcons[style.shape] || '⬬'}</span><span class="shape-name">${style.shape || '-'}</span></div>
-        <div class="shape-desc">${style.shapeDesc || ''}</div>
-      </div>
-      <div class="colors-section">
-        <div class="shape-label">САНАЛ БОЛГОСОН ӨНГӨНҮҮД</div>
-        <div class="colors-grid">${(style.colors || []).map(c => `<div class="color-item"><div class="color-dot" style="background:${c.hex}"></div><div class="color-info"><div class="name">${c.name}</div><div class="hex">${c.hex}</div></div></div>`).join('')}</div>
-      </div>
-      ${style.finish ? `<div style="margin:12px 0"><span class="shape-label">ӨНГӨЛГӨӨ</span><div style="color:#a78bfa;font-size:14px;margin-top:4px">${style.finish}</div></div>` : ''}
+      ${style.finish ? `<div style="margin:12px 0"><span style="color:#666;font-size:11px">ӨНГӨЛГӨӨ</span><div style="color:#a78bfa;margin-top:4px">${style.finish}</div></div>` : ''}
       <div class="reasoning"><p>💬 ${style.reasoning || ''}</p></div>
-      ${style.id ? `<div class="rate-section"><div class="rate-btn like" data-action="rate" data-style-id="${style.id}" data-liked="true">❤️ Таалагдсан</div><div class="rate-btn dislike" data-action="rate" data-style-id="${style.id}" data-liked="false">👎 Дургүй</div></div>` : ''}
     </div>
-    <div class="action-row"><div class="action-btn" data-action="reset">📸 Дахин зураг авах</div><div class="action-btn primary" data-action="newStyle">✨ Өөр загвар</div></div>`;
-}
-
-// Event delegation
-panelContent.addEventListener('click', (e) => {
-  const target = e.target.closest('[data-action]');
-  if (!target) return;
-  const action = target.dataset.action;
-  if (action === 'rate') {
-    profileManager.rateStyle(target.dataset.styleId, target.dataset.liked === 'true');
-    showToast(target.dataset.liked === 'true' ? '❤️ Таалагдсан' : '👌 Дургүй');
-  } else if (action === 'newStyle') {
-    requestNewStyleHandler();
-  } else if (action === 'reset') {
-    resetAndRetake();
-  }
-});
-
-async function requestNewStyleHandler() {
-  const profile = profileManager.getProfile();
-  if (!profile?.analysis) { showToast('Эхлээд зураг аваад шинжилгээ хийнэ үү'); return; }
-  
-  analyzeBtn.disabled = true;
-  panelContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>Шинэ загвар бэлдэж байна...</p></div>`;
-  
-  try {
-    const newStyle = await requestNewStyleFromAI(profile.analysis, profile.preferences.avoidedStyles);
-    if (!newStyle) throw new Error('AI загвар үүсгэж чадсангүй');
-    
-    const suggested = profileManager.suggestNewStyle(newStyle);
-    panelContent.innerHTML = renderNewStyle(suggested, suggested.isAlternative);
-    if (suggested.isAlternative) showToast('Өмнөхөөс өөр загвар!');
-  } catch (e) {
-    panelContent.innerHTML = `<p class="ph" style="color:#ff6666">❌ ${e.message}</p>`;
-  } finally {
-    analyzeBtn.disabled = false;
-  }
-}
-
-function resetAndRetake() {
-  capturedImageData = null;
-  panelContent.innerHTML = '<p class="ph">📸 Зураг аваад "Шинжилгээ" дарна уу</p>';
-  statusBadge.textContent = '📸 Гараа харуулна уу';
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CAMERA
-// ═══════════════════════════════════════════════════════════════════════════
-async function initCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: 1280, height: 720 }
-    });
-    video.srcObject = stream;
-    await video.play();
-    
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    offscreenCanvas.width = canvas.width;
-    offscreenCanvas.height = canvas.height;
-    
-    statusBadge.textContent = '📸 Камер бэлэн';
-  } catch(e) {
-    statusBadge.textContent = '❌ Камерын алдаа';
-  }
-}
-
-function startRafLoop() {
-  function loop() {
-    if (mpWrapper.isReady() && !isAnalyzing && video.readyState >= 2) {
-      mpWrapper.sendForRaf(video);
-    }
-    rafId = requestAnimationFrame(loop);
-  }
-  rafId = requestAnimationFrame(loop);
+    <div class="action-row">
+      <div class="action-btn" onclick="location.reload()">📸 Шинээр эхлэх</div>
+    </div>
+  `;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════════════════════
 captureBtn.addEventListener('click', () => {
-  offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-  capturedImageData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  if (!video.videoWidth) {
+    showToast('Камер бэлэн болоогүй байна');
+    return;
+  }
   
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = video.videoWidth;
+  offCanvas.height = video.videoHeight;
+  const offCtx = offCanvas.getContext('2d');
+  offCtx.drawImage(video, 0, 0);
+  
+  capturedImageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   
   statusBadge.textContent = '📸 Зураг авсан';
@@ -705,92 +418,69 @@ analyzeBtn.addEventListener('click', async () => {
   analyzeBtn.disabled = true;
   captureBtn.disabled = true;
   
-  panelContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>Гарыг таньж байна...</p></div>`;
+  panelContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>AI шинжилгээ хийж байна...</p></div>`;
+  statusBadge.textContent = '🔬 Шинжилж байна...';
   
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = offscreenCanvas.width;
-  tempCanvas.height = offscreenCanvas.height;
-  tempCanvas.getContext('2d').putImageData(capturedImageData, 0, 0);
-  
-  const landmarks = await mpWrapper.sendAndWait(tempCanvas);
-  const base64Image = tempCanvas.toDataURL('image/jpeg', 0.85);
-  
-  const { isNewUser, profile } = profileManager.identifyUser(landmarks);
-  updateUserUI();
-  
-  if (isNewUser) {
-    panelContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>Анхны шинжилгээ хийж байна...</p></div>`;
-    try {
-      const result = await performAIAnalysis(base64Image);
-      
-      if (result.analysis) {
-        profileManager.saveAnalysis(result.analysis);
-      }
+  try {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCanvas.getContext('2d').putImageData(capturedImageData, 0, 0);
+    
+    const base64Image = tempCanvas.toDataURL('image/jpeg', 0.8);
+    
+    const profile = getOrCreateProfile();
+    
+    // Өмнөх загвар байгаа эсэхийг шалгах
+    if (profile.suggestedStyles && profile.suggestedStyles.length > 0 && profile.visitCount > 1) {
+      const lastStyle = profile.suggestedStyles[profile.suggestedStyles.length - 1];
+      panelContent.innerHTML = renderStyle(lastStyle, true);
+      statusBadge.textContent = '✅ Таны өмнөх загвар';
+      showToast(`👋 Тавтай морил! (${profile.visitCount} дахь удаа)`);
+    } else {
+      // Шинэ загвар үүсгэх
+      const result = await callAI(base64Image);
       
       const style = result.style || result;
       if (!style) throw new Error('AI загвар үүсгэж чадсангүй');
       
-      const suggested = profileManager.suggestNewStyle(style);
-      panelContent.innerHTML = renderNewStyle(suggested);
+      // Хадгалах
+      if (!profile.suggestedStyles) profile.suggestedStyles = [];
+      profile.suggestedStyles.push(style);
+      saveProfile();
+      
+      panelContent.innerHTML = renderStyle(style, false);
       statusBadge.textContent = '✅ Шинжилгээ дууслаа';
-      showToast('🎉 Таны гарт тусгайлан зориулсан анхны загвар!');
-    } catch (e) {
-      panelContent.innerHTML = `<p class="ph" style="color:#ff6666">❌ ${e.message}</p>`;
-      statusBadge.textContent = '❌ Алдаа гарлаа';
+      showToast('🎉 Таны гарт тусгайлан зориулсан загвар!');
     }
-  } else {
-    const previousStyles = profile.suggestedStyles;
-    if (previousStyles.length > 0) {
-      panelContent.innerHTML = renderReturningUser(previousStyles[previousStyles.length - 1]);
-      statusBadge.textContent = '✅ Таны өмнөх загвар';
-      showToast(`👋 Тавтай морил! (${profile.visitCount} дахь удаа)`);
-    } else {
-      panelContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>Шинэ загвар бэлдэж байна...</p></div>`;
-      try {
-        const result = await performAIAnalysis(base64Image);
-        
-        if (result.analysis) {
-          profileManager.saveAnalysis(result.analysis);
-        }
-        
-        const style = result.style || result;
-        if (!style) throw new Error('AI загвар үүсгэж чадсангүй');
-        
-        const suggested = profileManager.suggestNewStyle(style);
-        panelContent.innerHTML = renderNewStyle(suggested);
-      } catch (e) {
-        panelContent.innerHTML = `<p class="ph" style="color:#ff6666">❌ ${e.message}</p>`;
-      }
-    }
+    
+  } catch(e) {
+    panelContent.innerHTML = `<p class="ph" style="color:#ff6666">❌ ${e.message}</p>`;
+    statusBadge.textContent = '❌ Алдаа гарлаа';
+  } finally {
+    isAnalyzing = false;
+    analyzeBtn.disabled = false;
+    captureBtn.disabled = false;
   }
-  
-  isAnalyzing = false;
-  analyzeBtn.disabled = false;
-  captureBtn.disabled = false;
-});
-
-// Settings
-document.getElementById('settingsToggle').addEventListener('click', () => {
-  document.getElementById('settingsPanel').classList.toggle('show');
-  profileManager.updateStorageInfo();
-});
-document.getElementById('clearProfileBtn').addEventListener('click', () => {
-  profileManager.clearCurrentProfile();
-  userBadge.textContent = '👤 Зочин';
-  userInfo.style.display = 'none';
-  capturedImageData = null;
-  panelContent.innerHTML = '<p class="ph">Профайл устгагдлаа. Шинээр зураг авна уу</p>';
-  showToast('🗑️ Профайл устгагдлаа');
-  document.getElementById('settingsPanel').classList.remove('show');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ЭХЛҮҮЛЭХ
 // ═══════════════════════════════════════════════════════════════════════════
 (async () => {
-  await initCamera();
-  await mpWrapper.initialize();
-  startRafLoop();
+  try {
+    await initCamera();
+    statusBadge.textContent = '📸 MediaPipe ачаалж байна...';
+    await initMediaPipe();
+    statusBadge.textContent = '📸 Камер бэлэн';
+    statusBadge.className = 'badge ok';
+    
+    // Профайл унших
+    getOrCreateProfile();
+  } catch(e) {
+    statusBadge.textContent = '❌ Алдаа: ' + e.message;
+    statusBadge.className = 'badge warn';
+  }
 })();
 </script>
 </body>
